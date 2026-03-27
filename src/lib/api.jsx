@@ -221,42 +221,69 @@ export const authAPI = {
   }
 }
 
-// User API calls
+// User API calls (Enhanced)
 export const userAPI = {
-  // Get all users
-  getAllUsers: async (params = {}) => {
-    const queryString = new URLSearchParams(params).toString()
-    return apiRequest(`/users${queryString ? `?${queryString}` : ''}`)
+  // Get all users with pagination
+  getAllUsers: async (page = 1, limit = 10) => {
+    return apiRequest(`/user/?page=${page}&limit=${limit}`);
   },
 
-  // Get user by ID
-  getUserById: async userId => {
-    return apiRequest(`/users/${userId}`)
+  // Get user by ID (handles both transporter and shipper)
+  getUserById: async (id, userType) => {
+    if (userType === 'TRANSPORTER') {
+      return apiRequest(`/transporter/${id}`);
+    } else if (userType === 'SHIPPER') {
+      return apiRequest(`/shipper/${id}`);
+    }
+    return apiRequest(`/user/${id}`);
   },
 
-  // Update user
-  updateUser: async (userId, userData) => {
-    return apiRequest(`/users/${userId}`, {
-      method: 'PUT',
-      body: JSON.stringify(userData)
-    })
+  // Update user status
+  updateUserStatus: async (id, status, userType) => {
+    if (userType === 'TRANSPORTER') {
+      return apiRequest(`/transporter/approve-transporter-profile`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          transporter_id: id,
+          status: status
+        })
+      });
+    } else if (userType === 'SHIPPER') {
+      return apiRequest(`/shipper/status/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: status
+        })
+      });
+    }
+  },
+
+  // Approve user
+  approveUser: async (id, userType) => {
+    return userAPI.updateUserStatus(id, 'approved', userType);
+  },
+
+  // Reject user
+  rejectUser: async (id, userType) => {
+    return userAPI.updateUserStatus(id, 'rejected', userType);
   },
 
   // Delete user
-  deleteUser: async userId => {
-    return apiRequest(`/users/${userId}`, {
+  deleteUser: async (id, userType) => {
+    if (userType === 'TRANSPORTER') {
+      return apiRequest(`/transporter/${id}`, {
+        method: 'DELETE'
+      });
+    } else if (userType === 'SHIPPER') {
+      return apiRequest(`/shipper/${id}`, {
+        method: 'DELETE'
+      });
+    }
+    return apiRequest(`/user/${id}`, {
       method: 'DELETE'
-    })
-  },
-
-  // Create user
-  createUser: async userData => {
-    return apiRequest('/users', {
-      method: 'POST',
-      body: JSON.stringify(userData)
-    })
+    });
   }
-}
+};
 
 // Admin API calls
 export const adminAPI = {
@@ -403,6 +430,7 @@ export const shipmentAPI = {
     return apiRequest(`/shipment/status/${status}`);
   }
 };
+
 
 // Export all APIs
 export default {
