@@ -365,12 +365,52 @@ export const transporterAPI = {
 }
 
 
+// Shipment API calls
+export const shipmentAPI = {
+  // Get all pending shipments
+  getPendingShipments: async () => {
+    return apiRequest('/shipment/admin/pending');
+  },
+
+  // Get shipment by ID
+  getShipmentById: async (id) => {
+    return apiRequest(`/shipment/${id}`);
+  },
+
+  // Update shipment status
+  updateShipmentStatus: async (shipment_id, status) => {
+    return apiRequest(`/shipment/status/${shipment_id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        shipment_id: shipment_id,
+        status: status
+      })
+    });
+  },
+
+  // Approve shipment (move to BIDDING)
+  approveShipment: async (shipment_id) => {
+    return shipmentAPI.updateShipmentStatus(shipment_id, 'BIDDING');
+  },
+
+  // Reject/Cancel shipment
+  rejectShipment: async (shipment_id) => {
+    return shipmentAPI.updateShipmentStatus(shipment_id, 'CANCELLED');
+  },
+
+  // Get shipment by status
+  getShipmentsByStatus: async (status) => {
+    return apiRequest(`/shipment/status/${status}`);
+  }
+};
+
 // Export all APIs
 export default {
   auth: authAPI,
   user: userAPI,
   admin: adminAPI,
   transporter: transporterAPI,
+  shipment: shipmentAPI,
   setCookie,
   removeCookie,
   getCookie
