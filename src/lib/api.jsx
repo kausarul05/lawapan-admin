@@ -34,7 +34,7 @@ const apiRequest = async (endpoint, options = {}) => {
     }
   }
 
-  console.log("Token found:", token ? "Yes" : "No")
+  // console.log("Token found:", token ? "Yes" : "No")
 
   if (token) {
     // Try both formats - some backends need "Bearer ", some don't
@@ -44,7 +44,7 @@ const apiRequest = async (endpoint, options = {}) => {
     // If that doesn't work, uncomment the line below to try with "Bearer "
     // defaultHeaders['Authorization'] = `Bearer ${token}`
 
-    console.log("Authorization header set:", defaultHeaders['Authorization'])
+    // console.log("Authorization header set:", defaultHeaders['Authorization'])
   } else {
     console.warn("No token found for API request to:", endpoint)
   }
@@ -74,7 +74,7 @@ const apiRequest = async (endpoint, options = {}) => {
     const contentType = response.headers.get("content-type")
     if (contentType && contentType.includes("application/json")) {
       data = await response.json()
-      console.log("Response data:", data)
+      // console.log("Response data:", data)
     } else {
       const text = await response.text()
       console.error("Non-JSON response:", text)
@@ -569,7 +569,38 @@ export const settingsAPI = {
   }
 };
 
+// Bid API calls
+export const bidAPI = {
+  // Get all bids (bidding shipments)
+  getAllBids: async () => {
+    return apiRequest('/bid/');
+  },
 
+  // Get bids by shipment ID
+  getBidsByShipment: async (shipmentId) => {
+    return apiRequest(`/bid/${shipmentId}`);
+  },
+
+  // Create a new bid
+  createBid: async (bidData) => {
+    return apiRequest('/bid/', {
+      method: 'POST',
+      body: JSON.stringify(bidData)
+    });
+  },
+
+  // Accept a bid
+  acceptBid: async (bidId) => {
+    return apiRequest(`/bid/${bidId}/accept`, {
+      method: 'PATCH'
+    });
+  },
+
+  // Get shipment bids (for admin)
+  getShipmentBids: async (shipmentId) => {
+    return apiRequest(`/shipment/${shipmentId}/bids`);
+  }
+};
 
 // Export all APIs
 export default {
@@ -580,6 +611,7 @@ export default {
   shipment: shipmentAPI,
   faq: faqAPI,
   settings: settingsAPI,
+  bid: bidAPI,
   setCookie,
   removeCookie,
   getCookie
