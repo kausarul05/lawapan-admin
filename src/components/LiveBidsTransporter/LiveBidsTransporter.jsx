@@ -76,41 +76,57 @@ const LiveBidsTransporter = () => {
     try {
       setConnectingSocket(true);
       const token = getCookie('token');
-      if (token) {
-        console.log('Initializing socket connection...');
-        socketService.connect(token);
 
-        // Set up connection status listener
+      if (token) {
+        console.log('Initializing socket connection with token...');
+
+        // Set up connection status listener BEFORE connecting
         socketService.on('connection_status', (status) => {
           console.log('Socket status update:', status);
-          setSocketConnected(status.status === 'connected');
+
           if (status.status === 'connected') {
+            setSocketConnected(true);
             toast.success('Real-time bidding connected!', { duration: 3000 });
+
             // Re-join room if there's a selected shipment
             if (selectedShipment) {
-              socketService.joinShipmentRoom(selectedShipment._id);
+              setTimeout(() => {
+                socketService.joinShipmentRoom(selectedShipment._id);
+              }, 500);
             }
+          } else if (status.status === 'disabled') {
+            setSocketConnected(false);
+            // Don't show error toast - just note that real-time is disabled
+            console.log('Real-time bidding not available');
           } else {
-            toast.error('Real-time bidding disconnected. Trying to reconnect...', { duration: 3000 });
+            setSocketConnected(false);
           }
+          setConnectingSocket(false);
         });
 
         socketService.on('connection_error', (error) => {
           console.error('Socket error:', error);
-          toast.error('Failed to connect to real-time server. Bids will still work but not real-time.');
+          setConnectingSocket(false);
+          setSocketConnected(false);
         });
 
-        // Check if already connected after a delay
+        // Connect to socket
+        socketService.connect(token);
+
+        // Set a timeout to handle connection - don't show errors to users
         setTimeout(() => {
-          if (!socketService.isConnectedToSocket()) {
-            console.log('Socket not connected after timeout');
+          if (!socketService.isConnectedToSocket() && !socketConnected) {
+            console.log('Socket connection timeout - real-time features disabled');
+            setConnectingSocket(false);
             setSocketConnected(false);
+            // Don't show toast error - just silently disable real-time
           }
-          setConnectingSocket(false);
-        }, 3000);
+        }, 5000);
+
       } else {
         console.log('No token found for socket connection');
         setConnectingSocket(false);
+        setSocketConnected(false);
       }
     } catch (error) {
       console.error('Socket initialization error:', error);
@@ -405,8 +421,8 @@ const LiveBidsTransporter = () => {
             key={ship._id}
             onClick={() => setSelectedShipment(ship)}
             className={`relative min-w-[220px] h-[130px] rounded-xl overflow-hidden shadow-md cursor-pointer transition-all ${selectedShipment?._id === ship._id
-                ? 'ring-2 ring-[#036BB4] ring-offset-2'
-                : 'hover:scale-105'
+              ? 'ring-2 ring-[#036BB4] ring-offset-2'
+              : 'hover:scale-105'
               }`}
           >
             {/* Background Image */}
@@ -628,8 +644,8 @@ const LiveBidsTransporter = () => {
                   setSelectedShipment(shipments[newIndex]);
                 }}
                 className={`w-10 h-10 rounded-md transition-colors ${Math.floor(shipmentIndex / itemsPerPage) + 1 === pageNum
-                    ? 'bg-[#036BB4] text-white font-bold text-sm'
-                    : 'text-gray-500 hover:bg-gray-100 text-sm'
+                  ? 'bg-[#036BB4] text-white font-bold text-sm'
+                  : 'text-gray-500 hover:bg-gray-100 text-sm'
                   }`}
               >
                 {pageNum}
