@@ -5,7 +5,7 @@ const API_BASE_URL =
 // Helper function for making API requests
 const apiRequest = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`
-  
+
   console.log("Making API request to:", url)
 
   const defaultHeaders = {
@@ -14,13 +14,13 @@ const apiRequest = async (endpoint, options = {}) => {
 
   // Try to get token from multiple sources
   let token = getCookie('token')
-  
+
   // If not in cookies, try localStorage
   if (!token && typeof localStorage !== 'undefined') {
     token = localStorage.getItem('token')
     console.log("Token from localStorage:", token ? "Found" : "Not found")
   }
-  
+
   // Also check for user data in localStorage
   if (!token && typeof localStorage !== 'undefined') {
     const userData = localStorage.getItem('user')
@@ -40,10 +40,10 @@ const apiRequest = async (endpoint, options = {}) => {
     // Try both formats - some backends need "Bearer ", some don't
     // Let's try without "Bearer " first as per your Postman
     defaultHeaders['Authorization'] = token
-    
+
     // If that doesn't work, uncomment the line below to try with "Bearer "
     // defaultHeaders['Authorization'] = `Bearer ${token}`
-    
+
     console.log("Authorization header set:", defaultHeaders['Authorization'])
   } else {
     console.warn("No token found for API request to:", endpoint)
@@ -65,10 +65,10 @@ const apiRequest = async (endpoint, options = {}) => {
 
   try {
     const response = await fetch(url, config)
-    
+
     console.log("Response status:", response.status)
     console.log("Response headers:", [...response.headers.entries()])
-    
+
     // Try to parse response as JSON
     let data
     const contentType = response.headers.get("content-type")
@@ -104,7 +104,7 @@ const getCookie = name => {
 
   const cookies = document.cookie.split(';')
   console.log("All cookies:", cookies)
-  
+
   for (let cookie of cookies) {
     const [key, value] = cookie.trim().split('=')
     if (key === name) {
@@ -112,7 +112,7 @@ const getCookie = name => {
       return value
     }
   }
-  
+
   console.log(`Cookie ${name} not found`)
   return null
 }
@@ -124,12 +124,12 @@ export const setCookie = (name, value, days = 30) => {
   const expires = new Date()
   expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000)
   document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`
-  
+
   // Also store in localStorage for redundancy
   if (typeof localStorage !== 'undefined') {
     localStorage.setItem(name, value)
   }
-  
+
   console.log(`Cookie set: ${name}=${value.substring(0, 20)}...`)
 }
 
@@ -138,7 +138,7 @@ export const removeCookie = name => {
   if (typeof document === 'undefined') return
 
   document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`
-  
+
   // Also remove from localStorage
   if (typeof localStorage !== 'undefined') {
     localStorage.removeItem(name)
@@ -150,14 +150,14 @@ export const authAPI = {
   // Login user
   login: async (email, password) => {
     console.log("Attempting login with:", { email })
-    
+
     const response = await apiRequest('/auth/sign-in', {
       method: 'POST',
       body: JSON.stringify({ email, password })
     })
-    
+
     console.log("Login response:", response)
-    
+
     // Store token after successful login
     const token = response.data?.accessToken
     if (token) {
@@ -172,7 +172,7 @@ export const authAPI = {
     } else {
       console.error("No token in login response:", response)
     }
-    
+
     return response
   },
 
@@ -261,8 +261,8 @@ export const userAPI = {
 // Admin API calls
 export const adminAPI = {
   // Get dashboard statistics
-  getDashboardStats: async () => {
-    return apiRequest('/admin/dashboard')
+  getDashboardStats: async (month, year) => {
+    return apiRequest(`/stats/admin?month=${month}&year=${year}`);
   },
 
   // Get all admin users
@@ -309,7 +309,7 @@ export const transporterAPI = {
   approveTransporter: async (transporter_id) => {
     return apiRequest('/transporter/approve-transporter-profile', {
       method: 'PATCH',
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         transporter_id: transporter_id,
         status: 'approved'
       })
@@ -320,7 +320,7 @@ export const transporterAPI = {
   rejectTransporter: async (transporter_id) => {
     return apiRequest('/transporter/reject-transporter-profile', {
       method: 'PUT',
-      body: JSON.stringify({ 
+      body: JSON.stringify({
         transporter_id: transporter_id,
         status: 'rejected'
       })
@@ -363,6 +363,7 @@ export const transporterAPI = {
     })
   }
 }
+
 
 // Export all APIs
 export default {
