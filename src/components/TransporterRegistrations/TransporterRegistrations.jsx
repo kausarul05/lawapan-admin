@@ -2,7 +2,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { 
   MagnifyingGlassIcon, 
@@ -19,6 +18,7 @@ export default function TransporterRegistrations() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [actionInProgress, setActionInProgress] = useState(null);
   const itemsPerPage = 10;
 
   // Fetch transporters from API
@@ -33,7 +33,6 @@ export default function TransporterRegistrations() {
       
       if (response.success) {
         setTransporters(response.data);
-        // Calculate total pages
         setTotalPages(Math.ceil(response.data.length / itemsPerPage));
       } else {
         toast.error(response.message || "Failed to fetch transporters");
@@ -74,34 +73,40 @@ export default function TransporterRegistrations() {
   // Handle approve
   const handleApprove = async (id) => {
     try {
+      setActionInProgress(id);
       const response = await transporterAPI.approveTransporter(id);
       
       if (response.success) {
-        toast.success("Transporter approved successfully");
-        fetchTransporters(); // Refresh the list
+        toast.success("Transporter approved successfully!");
+        await fetchTransporters(); // Refresh the list
       } else {
         toast.error(response.message || "Failed to approve transporter");
       }
     } catch (error) {
       console.error("Error approving transporter:", error);
       toast.error(error.message || "Failed to approve transporter");
+    } finally {
+      setActionInProgress(null);
     }
   };
 
   // Handle reject
   const handleReject = async (id) => {
     try {
+      setActionInProgress(id);
       const response = await transporterAPI.rejectTransporter(id);
       
       if (response.success) {
-        toast.success("Transporter rejected successfully");
-        fetchTransporters(); // Refresh the list
+        toast.success("Transporter rejected successfully!");
+        await fetchTransporters(); // Refresh the list
       } else {
         toast.error(response.message || "Failed to reject transporter");
       }
     } catch (error) {
       console.error("Error rejecting transporter:", error);
       toast.error(error.message || "Failed to reject transporter");
+    } finally {
+      setActionInProgress(null);
     }
   };
 
@@ -112,7 +117,7 @@ export default function TransporterRegistrations() {
   // Filter transporters based on search term
   const filteredTransporters = transporters.filter(transporter => 
     transporter.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    transporter.user_id?.toLowerCase().includes(searchTerm.toLowerCase())
+    transporter.email?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   // Get current page data
@@ -153,7 +158,7 @@ export default function TransporterRegistrations() {
     <div className="w-full bg-white p-6 rounded-xl shadow-[0px_4px_14.7px_0px_rgba(0,0,0,0.1)] min-h-[600px] flex flex-col justify-between">
       <div>
         {/* Header Section */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
           <h2 className="text-xl font-bold text-gray-800 font-['Roboto']">
             Transporter Registration ({transporters.length})
           </h2>
@@ -163,7 +168,7 @@ export default function TransporterRegistrations() {
               <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by company name..."
+                placeholder="Search by company name or email..."
                 className="pl-9 pr-4 py-2 w-72 text-sm text-black rounded-md border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#036BB4]"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -179,12 +184,12 @@ export default function TransporterRegistrations() {
               <tr className="bg-[#036BB4] text-white">
                 <th className="py-3 px-6 font-semibold text-sm first:rounded-l-md">Company Name</th>
                 <th className="py-3 px-6 font-semibold text-sm">Email</th>
+                <th className="py-3 px-6 font-semibold text-sm">Phone</th>
                 <th className="py-3 px-6 font-semibold text-sm">Number of Trucks</th>
-                <th className="py-3 px-6 font-semibold text-sm">Truck Type</th>
                 <th className="py-3 px-6 font-semibold text-sm text-center">Applied Date</th>
                 <th className="py-3 px-6 font-semibold text-sm text-center">Status</th>
                 <th className="py-3 px-6 font-semibold text-sm text-center last:rounded-r-md">Action</th>
-               </tr>
+              </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {currentTransporters.length > 0 ? (
@@ -212,13 +217,13 @@ export default function TransporterRegistrations() {
                       </div>
                     </td>
                     <td className="py-4 px-6 text-gray-500 text-sm">
-                      {transporter.email || transporter.user_id?.email || "N/A"}
+                      {transporter.email || "N/A"}
                     </td>
                     <td className="py-4 px-6 text-gray-500 text-sm">
-                      {transporter.number_of_trucks || 0}
+                      {transporter.phone || "N/A"}
                     </td>
                     <td className="py-4 px-6 text-gray-500 text-sm">
-                      {transporter.truck_type?.replace(/_/g, ' ') || "N/A"}
+                      {transporter.number_of_trucks || transporter.totalVehicles || 0}
                     </td>
                     <td className="py-4 px-6 text-gray-500 text-sm text-center">
                       {formatDate(transporter.createdAt)}
@@ -235,22 +240,36 @@ export default function TransporterRegistrations() {
                           <>
                             <button 
                               onClick={() => handleApprove(transporter._id)}
-                              className="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center border border-green-100 hover:bg-green-500 group transition-all"
+                              disabled={actionInProgress === transporter._id}
+                              className={`w-7 h-7 rounded-full bg-green-50 flex items-center justify-center border border-green-100 hover:bg-green-500 group transition-all ${
+                                actionInProgress === transporter._id ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
                               title="Approve"
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="stroke-green-500 group-hover:stroke-white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                              </svg>
+                              {actionInProgress === transporter._id ? (
+                                <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="stroke-green-500 group-hover:stroke-white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                  <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                              )}
                             </button>
                             <button 
                               onClick={() => handleReject(transporter._id)}
-                              className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center border border-red-100 hover:bg-red-500 group transition-all"
+                              disabled={actionInProgress === transporter._id}
+                              className={`w-7 h-7 rounded-full bg-red-50 flex items-center justify-center border border-red-100 hover:bg-red-500 group transition-all ${
+                                actionInProgress === transporter._id ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
                               title="Reject"
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="stroke-red-500 group-hover:stroke-white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="18" y1="6" x2="6" y2="18"></line>
-                                <line x1="6" y1="6" x2="18" y2="18"></line>
-                              </svg>
+                              {actionInProgress === transporter._id ? (
+                                <div className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="stroke-red-500 group-hover:stroke-white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                              )}
                             </button>
                           </>
                         )}
@@ -281,7 +300,7 @@ export default function TransporterRegistrations() {
       </div>
 
       {/* Pagination Footer */}
-      {filteredTransporters.length > 0 && (
+      {filteredTransporters.length > 0 && totalPages > 1 && (
         <div className="flex justify-end items-center gap-2 mt-8">
           <button 
             onClick={goToPreviousPage}

@@ -49,10 +49,10 @@ export default function LoginPage () {
       toast.success('Login Successful!')
 
       // Redirect based on user role
-      if (response.user?.role === 'admin') {
+      if (response.user?.role === 'ADMIN') {
         router.push('/admin')
       } else {
-        router.push('/dashboard')
+        router.push('/admin')
       }
     } catch (err) {
       console.error('Login error:', err)

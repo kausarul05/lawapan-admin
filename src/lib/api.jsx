@@ -159,7 +159,7 @@ export const authAPI = {
     console.log("Login response:", response)
     
     // Store token after successful login
-    const token = response.token || response.access_token
+    const token = response.data?.accessToken
     if (token) {
       setCookie('token', token, 30)
       if (typeof localStorage !== 'undefined') {
@@ -294,11 +294,9 @@ export const adminAPI = {
   }
 }
 
-// Transporter API calls
 export const transporterAPI = {
   // Get all transporters
   getAllTransporters: async () => {
-    console.log("Fetching all transporters...")
     return apiRequest('/transporter/all')
   },
 
@@ -307,17 +305,25 @@ export const transporterAPI = {
     return apiRequest(`/transporter/${id}`)
   },
 
-  // Approve transporter
-  approveTransporter: async id => {
-    return apiRequest(`/transporter/approve/${id}`, {
-      method: 'PUT'
+  // Approve transporter profile
+  approveTransporter: async (transporter_id) => {
+    return apiRequest('/transporter/approve-transporter-profile', {
+      method: 'PATCH',
+      body: JSON.stringify({ 
+        transporter_id: transporter_id,
+        status: 'approved'
+      })
     })
   },
 
-  // Reject transporter
-  rejectTransporter: async id => {
-    return apiRequest(`/transporter/reject/${id}`, {
-      method: 'PUT'
+  // Reject transporter profile
+  rejectTransporter: async (transporter_id) => {
+    return apiRequest('/transporter/reject-transporter-profile', {
+      method: 'PUT',
+      body: JSON.stringify({ 
+        transporter_id: transporter_id,
+        status: 'rejected'
+      })
     })
   },
 
@@ -345,7 +351,7 @@ export const transporterAPI = {
   bulkApprove: async ids => {
     return apiRequest('/transporter/bulk-approve', {
       method: 'POST',
-      body: JSON.stringify({ ids })
+      body: JSON.stringify({ ids, status: 'approved' })
     })
   },
 
@@ -353,7 +359,7 @@ export const transporterAPI = {
   bulkReject: async ids => {
     return apiRequest('/transporter/bulk-reject', {
       method: 'POST',
-      body: JSON.stringify({ ids })
+      body: JSON.stringify({ ids, status: 'rejected' })
     })
   }
 }
