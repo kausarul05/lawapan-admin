@@ -36,33 +36,30 @@ export default function LoginPage () {
     }
 
     try {
-      console.log("xxxxxxxxxx")
-      // Call the real API
       const response = await authAPI.login(email, password)
 
       console.log('Login successful:', response)
 
-      // Store the token in cookies
-      const maxAge = rememberMe ? 60 * 60 * 24 * 30 : 60 * 30 // 30 days or 30 minutes
-      setCookie('token', response?.data?.accessToken, rememberMe ? 30 : 0.0208) // 30 days or 30 minutes
-
-      // Store user data in localStorage if needed
-      if (response.user) {
-        localStorage.setItem('user', JSON.stringify(response.data))
+      // The token is now stored automatically in the login function
+      // But let's double-check
+      if (response.token) {
+        console.log('Token stored successfully')
       }
 
       toast.success('Login Successful!')
 
       // Redirect based on user role
-      if (response?.data?.role === 'ADMIN') {
+      if (response.user?.role === 'admin') {
         router.push('/admin')
       } else {
-        // router.push('/dashboard')
+        router.push('/dashboard')
       }
     } catch (err) {
       console.error('Login error:', err)
       setError(err?.message || 'Invalid email or password. Please try again.')
-      toast.error(err?.message || 'Invalid email or password. Please try again.')
+      toast.error(
+        err?.message || 'Invalid email or password. Please try again.'
+      )
     } finally {
       setLoading(false)
     }
