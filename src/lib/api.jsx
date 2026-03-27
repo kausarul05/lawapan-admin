@@ -431,6 +431,145 @@ export const shipmentAPI = {
   }
 };
 
+// FAQ API calls
+export const faqAPI = {
+  // Get all FAQs
+  getAllFAQs: async (page = 1, limit = 10) => {
+    return apiRequest(`/faqs?page=${page}&limit=${limit}`);
+  },
+
+  // Get FAQ by ID
+  getFAQById: async (id) => {
+    return apiRequest(`/faqs/${id}`);
+  },
+
+  // Create new FAQ
+  createFAQ: async (data) => {
+    return apiRequest('/faqs', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  // Update FAQ
+  updateFAQ: async (id, data) => {
+    return apiRequest(`/faqs/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
+
+  // Delete FAQ
+  deleteFAQ: async (id) => {
+    return apiRequest(`/faqs/${id}`, {
+      method: 'DELETE'
+    });
+  }
+};
+
+export const settingsAPI = {
+  // Get About Us
+  getAboutUs: async () => {
+    return apiRequest('/setting/about');
+  },
+
+  // Update About Us
+  updateAboutUs: async (description) => {
+    return apiRequest('/setting/about', {
+      method: 'PATCH',
+      body: JSON.stringify({ description })
+    });
+  },
+
+  // Get Privacy Policy
+  getPrivacyPolicy: async () => {
+    return apiRequest('/setting/privacy');
+  },
+
+  // Update Privacy Policy
+  updatePrivacyPolicy: async (description) => {
+    return apiRequest('/setting/privacy', {
+      method: 'PATCH',
+      body: JSON.stringify({ description })
+    });
+  },
+
+  // Get Terms & Conditions
+  getTermsConditions: async () => {
+    return apiRequest('/setting/terms');
+  },
+
+  // Update Terms & Conditions
+  updateTermsConditions: async (description) => {
+    return apiRequest('/setting/terms', {
+      method: 'PATCH',
+      body: JSON.stringify({ description })
+    });
+  },
+
+  // Get Hiring
+  getHiring: async () => {
+    return apiRequest('/setting/hiring');
+  },
+
+  // Update Hiring
+  updateHiring: async (description) => {
+    return apiRequest('/setting/hiring', {
+      method: 'PATCH',
+      body: JSON.stringify({ description })
+    });
+  },
+
+  // Get Insurance
+  getInsurance: async () => {
+    return apiRequest('/setting/insurance');
+  },
+
+  // Update Insurance
+  updateInsurance: async (description) => {
+    return apiRequest('/setting/insurance', {
+      method: 'PATCH',
+      body: JSON.stringify({ description })
+    });
+  },
+
+  // Get Carrier Data
+  getCarrierData: async () => {
+    return apiRequest('/setting/carrier');
+  },
+
+  // Update Carrier Data
+  updateCarrierData: async (description) => {
+    return apiRequest('/setting/carrier', {
+      method: 'PATCH',
+      body: JSON.stringify({ description })
+    });
+  },
+
+  // Generic update function
+  updateSetting: async (type, description) => {
+    const endpoints = {
+      'privacy-security': '/setting/privacy',
+      'terms-conditions': '/setting/terms',
+      'about-us': '/setting/about',
+      'hiring': '/setting/hiring',
+      'insurance': '/setting/insurance',
+      'carrier-data': '/setting/carrier'
+    };
+    
+    const endpoint = endpoints[type];
+    if (!endpoint) {
+      throw new Error(`Invalid setting type: ${type}`);
+    }
+    
+    return apiRequest(endpoint, {
+      method: 'PATCH',
+      body: JSON.stringify({ description })
+    });
+  }
+};
+
+
 
 // Export all APIs
 export default {
@@ -439,6 +578,8 @@ export default {
   admin: adminAPI,
   transporter: transporterAPI,
   shipment: shipmentAPI,
+  faq: faqAPI,
+  settings: settingsAPI,
   setCookie,
   removeCookie,
   getCookie

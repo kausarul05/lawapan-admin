@@ -5,12 +5,11 @@ import FAQForm from "@/components/FAQManagement/FAQForm";
 import FAQManagement from "@/components/FAQManagement/FAQManagement";
 import React, { useState } from "react";
 
-
 export default function FAQPage() {
-  // 1. State to track which screen to show
+  // State to track which screen to show
   const [view, setView] = useState("list"); // Options: "list", "add", "edit"
   
-  // 2. State to hold the data of the FAQ being edited
+  // State to hold the data of the FAQ being edited
   const [selectedFaq, setSelectedFaq] = useState(null);
 
   // Function to handle moving to the Edit screen
@@ -19,14 +18,19 @@ export default function FAQPage() {
     setView("edit");
   };
 
-  // 3. Conditional Rendering based on state
-  
+  // Function to handle successful operation
+  const handleSuccess = () => {
+    setView("list");
+    setSelectedFaq(null);
+  };
+
   // VIEW: ADD FAQ
   if (view === "add") {
     return (
       <FAQForm
         mode="add" 
-        onBack={() => setView("list")} 
+        onBack={() => setView("list")}
+        onSuccess={handleSuccess}
       />
     );
   }
@@ -39,8 +43,9 @@ export default function FAQPage() {
         initialData={selectedFaq} 
         onBack={() => {
           setView("list");
-          setSelectedFaq(null); // Clear selection on back
-        }} 
+          setSelectedFaq(null);
+        }}
+        onSuccess={handleSuccess}
       />
     );
   }
