@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 
 import {
@@ -15,7 +15,7 @@ import {
   AlertOctagon,
   CloudDownload,
   Hexagon,
-    Settings
+  Settings
 } from "lucide-react";
 import Image from "next/image";
 import dreckks from "../../public/tika-food.svg";
@@ -34,33 +34,58 @@ const navItems = [
   { name: 'Earning', href: '/admin/earning', icon: ShoppingBag }, // Changed to Bag icon
   { name: "FAQ & Support", href: "/admin/faq-support", icon: UserSquare2 }, // Changed to Profile Support icon
   {
-    name: "Problem Management", 
+    name: "Problem Management",
     href: "/admin/problem-management",
     icon: AlertOctagon, // Changed to Alert icon
   },
   {
-    name: "Withdrawal Requests", 
+    name: "Withdrawal Requests",
     href: "/admin/withdrawal-requests",
     icon: CloudDownload, // Changed to Cloud/Withdraw icon
   },
-  { name: "Settings", href: "/admin/settings", icon:   Settings }, // Changed to Hexagon icon
+  { name: "Settings", href: "/admin/settings", icon: Settings }, // Changed to Hexagon icon
 ];
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const pathname = usePathname();
 
+  const router = useRouter();
+
+  // Logout function
+  const handleLogout = () => {
+    // Clear all localStorage items
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('shipper_id');
+    localStorage.removeItem('transporter_id');
+    localStorage.removeItem('user_role');
+    localStorage.removeItem('userID');
+    localStorage.removeItem('rememberEmail');
+
+    // Clear cookies
+    document.cookie.split(";").forEach(function (c) {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+    });
+
+    // Alternative way to clear specific token cookie
+    document.cookie = "token=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;";
+
+    // Redirect to home page
+    router.push('/');
+  };
+
   return (
     <>
       <aside
         // Changed sidebar background to white and text to black
-        className={`fixed top-0 left-0 h-full bg-white text-black shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${
-          isOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"
-        }`}
+        className={`fixed top-0 left-0 h-full bg-white text-black shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"
+          }`}
       >
         <div className="flex flex-col h-full justify-between border-r border-[#D6D6D6]">
           {/* Logo & Close Button */}
           <div className="flex items-center justify-between border-b border-[#D6D6D6] pb-4 p-[10px]">
-          <img src="/admin-sidebarLogo.png" alt="" />
+            <img src="/admin-sidebarLogo.png" alt="" />
             {/* Updated hover state for white background */}
             <button
               onClick={() => setIsOpen(false)}
@@ -98,22 +123,21 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   key={name}
                   href={href}
                   // Updated active and hover states for new background/text colors
-                  className={`flex items-center px-4 w-[218px] mx-auto py-2 transition-all rounded ${
-                    isActive
-                      ? "bg-[#036BB4] text-white " // Kept white text for active for better contrast on cyan
-                      : "hover:bg-gray-100" // Changed hover to light gray
-                  }`}
+                  className={`flex items-center px-4 w-[218px] mx-auto py-2 transition-all rounded ${isActive
+                    ? "bg-[#036BB4] text-white " // Kept white text for active for better contrast on cyan
+                    : "hover:bg-gray-100" // Changed hover to light gray
+                    }`}
                 >
                   <Icon className="w-5 h-5 mr-3" />
                   <span className="font-normal text-[13px]">{name}</span>
                 </Link>
               );
             })}
-            
+
 
             {/* Logout Button */}
             <div className="border-t border-[#D6D6D6] pt-6 ">
-              <button className="flex ml-9 gap-2 items-center text-[#FF0000] hover:text-red-600">
+              <button onClick={handleLogout} className="flex ml-9 gap-2 items-center text-[#FF0000] hover:text-red-600">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="20"
