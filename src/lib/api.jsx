@@ -591,7 +591,7 @@ export const bidAPI = {
 
   // Accept a bid
   acceptBid: async (bidId) => {
-    return apiRequest(`/bid/${bidId}`, {
+    return apiRequest(`/bid/${bidId}/accept`, {
       method: 'PATCH'
     });
   },

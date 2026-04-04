@@ -177,7 +177,7 @@ export default function UserManagement() {
                 <th className="py-3 px-6 text-sm font-semibold">Phone</th>
                 <th className="py-3 px-6 text-sm font-semibold">Registration Date</th>
                 <th className="py-3 px-6 text-sm font-semibold text-center">User Type</th>
-                <th className="py-3 px-6 text-sm font-semibold text-center last:rounded-r-md">Action</th>
+                {/* <th className="py-3 px-6 text-sm font-semibold text-center last:rounded-r-md">Action</th> */}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -212,7 +212,7 @@ export default function UserManagement() {
                         {formatUserType(user.userType)}
                       </span>
                     </td>
-                    <td className="py-4 px-6">
+                    {/* <td className="py-4 px-6">
                       <div className="flex items-center justify-center gap-3">
                         <button 
                           onClick={() => handleDelete(user._id, user.userType)}
@@ -236,7 +236,7 @@ export default function UserManagement() {
                           <EyeIcon className="h-4 w-4 text-purple-500 group-hover:text-white" />
                         </button>
                       </div>
-                    </td>
+                    </td> */}
                   </tr>
                 ))
               ) : (

@@ -14,6 +14,14 @@ import toast from 'react-hot-toast';
 import { bidAPI } from '@/lib/api';
 import socketService from '@/services/socketService';
 
+
+// Replace localhost URL with server URL
+    const replaceImageUrl = (url) => {
+        if (!url) return '/shipment-sample.jpg';
+        // Replace localhost:5000 with server.lawapantruck.com
+        return url.replace('http://localhost:5000', 'https://server.lawapantruck.com');
+    };
+
 const LiveBidsTransporter = () => {
   const [shipments, setShipments] = useState([]);
   const [selectedShipment, setSelectedShipment] = useState(null);
@@ -429,7 +437,7 @@ const LiveBidsTransporter = () => {
             <div className="absolute inset-0 bg-gray-600">
               {ship.shipment_images?.[0] ? (
                 <img
-                  src={ship.shipment_images[0]}
+                  src={replaceImageUrl(ship.shipment_images[0])}
                   alt={ship.shipment_title}
                   className="w-full h-full object-cover"
                 />
