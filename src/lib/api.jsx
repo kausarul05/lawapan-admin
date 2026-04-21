@@ -569,6 +569,38 @@ export const settingsAPI = {
   }
 };
 
+// Payment API calls
+export const paymentAPI = {
+  // Get all pending payment requests
+  getPendingPayments: async (page = 1, limit = 10) => {
+    return apiRequest(`/payment/pending?page=${page}&limit=${limit}`);
+  },
+
+  // Get payment by ID
+  getPaymentById: async (paymentId) => {
+    return apiRequest(`/payment/${paymentId}`);
+  },
+
+  // Approve payment
+  approvePayment: async (paymentId) => {
+    return apiRequest(`/payment/${paymentId}/approve`, {
+      method: 'PATCH'
+    });
+  },
+
+  // Reject payment
+  rejectPayment: async (paymentId) => {
+    return apiRequest(`/payment/${paymentId}/reject`, {
+      method: 'PATCH'
+    });
+  },
+
+  // Get payment statistics
+  getPaymentStats: async () => {
+    return apiRequest('/payment/stats');
+  }
+};
+
 // Bid API calls
 export const bidAPI = {
   // Get all bids (bidding shipments)
@@ -612,6 +644,7 @@ export default {
   faq: faqAPI,
   settings: settingsAPI,
   bid: bidAPI,
+  payment: paymentAPI,
   setCookie,
   removeCookie,
   getCookie

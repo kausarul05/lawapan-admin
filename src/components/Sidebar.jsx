@@ -1,8 +1,8 @@
+// components/Sidebar.js
 "use client";
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-
 
 import {
   LayoutGrid,
@@ -15,45 +15,56 @@ import {
   AlertOctagon,
   CloudDownload,
   Hexagon,
-  Settings
+  Settings,
+  CreditCard,
+  Truck,
+  DollarSign,
+  CheckCircle,
+  Receipt
 } from "lucide-react";
 import Image from "next/image";
-import dreckks from "../../public/tika-food.svg";
 import barss from "../../public/icon/bars.png";
 
 const navItems = [
-  { name: "Dashboard", href: "/admin", icon: LayoutGrid }, // Changed to Grid icon
+  { name: "Dashboard", href: "/admin", icon: LayoutGrid },
   {
     name: "Transporter Registrations",
     href: "/admin/transporter-registration",
     icon: FileText,
   },
-  { name: "Shipment Requests", href: "/admin/shipment-requests", icon: ListTodo }, // Changed to List icon
-  { name: "Live Bids & Transporter", href: "/admin/live-bids-transporter", icon: Radio }, // Changed to Signal/Radio icon
-  { name: "User Management", href: "/admin/user-management", icon: UserCog }, // Changed to User with Gear icon
-  { name: 'Earning', href: '/admin/earning', icon: ShoppingBag }, // Changed to Bag icon
-  { name: "FAQ & Support", href: "/admin/faq-support", icon: UserSquare2 }, // Changed to Profile Support icon
+  { name: "Shipment Requests", href: "/admin/shipment-requests", icon: ListTodo },
+  { name: "Live Bids & Transporter", href: "/admin/live-bids-transporter", icon: Radio },
+  // { name: "Transporter Bid Requests", href: "/admin/transporter-bid-requests", icon: Truck }, // NEW
+  { name: "User Management", href: "/admin/user-management", icon: UserCog },
+  { name: 'Earning', href: '/admin/earning', icon: ShoppingBag },
+  { name: "Payment Requests to Shipper", href: "/admin/payment-requests-to-shipper", icon: DollarSign }, // NEW
+  { name: "Payment Verification", href: "/admin/payment-verification", icon: CheckCircle }, // NEW
+  { name: "Transporter Payment Requests", href: "/admin/transporter-payment-requests", icon: Receipt }, // NEW
+  { name: "FAQ & Support", href: "/admin/faq-support", icon: UserSquare2 },
   {
     name: "Problem Management",
     href: "/admin/problem-management",
-    icon: AlertOctagon, // Changed to Alert icon
+    icon: AlertOctagon,
   },
   {
     name: "Withdrawal Requests",
     href: "/admin/withdrawal-requests",
-    icon: CloudDownload, // Changed to Cloud/Withdraw icon
+    icon: CloudDownload,
   },
-  { name: "Settings", href: "/admin/settings", icon: Settings }, // Changed to Hexagon icon
+  {
+    name: "Pending Payment Requests",
+    href: "/admin/pending-payment-requests",
+    icon: CreditCard,
+  },
+  { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const pathname = usePathname();
-
   const router = useRouter();
 
   // Logout function
   const handleLogout = () => {
-    // Clear all localStorage items
     localStorage.removeItem('auth_token');
     localStorage.removeItem('shipper_id');
     localStorage.removeItem('transporter_id');
@@ -61,32 +72,26 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     localStorage.removeItem('userID');
     localStorage.removeItem('rememberEmail');
 
-    // Clear cookies
     document.cookie.split(";").forEach(function (c) {
       document.cookie = c
         .replace(/^ +/, "")
         .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
     });
 
-    // Alternative way to clear specific token cookie
     document.cookie = "token=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;";
 
-    // Redirect to home page
     router.push('/');
   };
 
   return (
     <>
       <aside
-        // Changed sidebar background to white and text to black
         className={`fixed top-0 left-0 h-full bg-white text-black shadow-lg z-50 transform transition-transform duration-300 ease-in-out ${isOpen ? "translate-x-0 w-64" : "-translate-x-full w-64"
           }`}
       >
         <div className="flex flex-col h-full justify-between border-r border-[#D6D6D6]">
-          {/* Logo & Close Button */}
           <div className="flex items-center justify-between border-b border-[#D6D6D6] pb-4 p-[10px]">
-            <img src="/admin-sidebarLogo.png" alt="" />
-            {/* Updated hover state for white background */}
+            <img src="/admin-sidebarLogo.png" alt="Logo" />
             <button
               onClick={() => setIsOpen(false)}
               className="p-1 hover:bg-gray-100 rounded text-[#494949]"
@@ -114,7 +119,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             </button>
           </div>
 
-          {/* Navigation Items */}
           <nav className="mt-4 space-y-6 flex-grow overflow-y-auto">
             {navItems.map(({ name, href, icon: Icon }) => {
               const isActive = pathname === href;
@@ -122,10 +126,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 <Link
                   key={name}
                   href={href}
-                  // Updated active and hover states for new background/text colors
                   className={`flex items-center px-4 w-[218px] mx-auto py-2 transition-all rounded ${isActive
-                    ? "bg-[#036BB4] text-white " // Kept white text for active for better contrast on cyan
-                    : "hover:bg-gray-100" // Changed hover to light gray
+                      ? "bg-[#036BB4] text-white"
+                      : "hover:bg-gray-100"
                     }`}
                 >
                   <Icon className="w-5 h-5 mr-3" />
@@ -134,8 +137,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               );
             })}
 
-
-            {/* Logout Button */}
             <div className="border-t border-[#D6D6D6] pt-6 ">
               <button onClick={handleLogout} className="flex ml-9 gap-2 items-center text-[#FF0000] hover:text-red-600">
                 <svg
@@ -167,9 +168,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         </div>
       </aside>
 
-      {/* Open Button (When Sidebar is Closed) */}
       {!isOpen && (
-        // Updated background color for the open button
         <button
           onClick={() => setIsOpen(true)}
           className="fixed top-4 left-4 z-50 bg-white p-2 rounded-md shadow-lg flex items-center justify-center hover:bg-gray-100 transition"
