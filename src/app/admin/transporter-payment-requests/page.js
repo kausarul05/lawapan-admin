@@ -6,9 +6,8 @@ import {
   MagnifyingGlassIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  CheckIcon,
   XMarkIcon,
-  EyeIcon
+  CreditCardIcon
 } from "@heroicons/react/24/outline";
 import toast from "react-hot-toast";
 
@@ -79,8 +78,10 @@ export default function TransporterPaymentRequests() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [actionInProgress, setActionInProgress] = useState(null);
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectRequestId, setRejectRequestId] = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [showModal, setShowModal] = useState(false);
   const itemsPerPage = 10;
 
   const formatCurrency = (amount) => new Intl.NumberFormat('en-US', {
@@ -94,20 +95,31 @@ export default function TransporterPaymentRequests() {
     day: 'numeric'
   });
 
-  const handleApprove = async (requestId) => {
+  const handleMarkAsPaid = async (requestId) => {
     setActionInProgress(requestId);
     await new Promise(resolve => setTimeout(resolve, 1000));
-    toast.success("Payment approved and sent to transporter!");
+    toast.success("Payment marked as paid and sent to transporter!");
     setActionInProgress(null);
-    setShowModal(false);
   };
 
   const handleReject = async (requestId) => {
+    if (!rejectReason.trim()) {
+      toast.error("Please provide a reason for rejection");
+      return;
+    }
     setActionInProgress(requestId);
     await new Promise(resolve => setTimeout(resolve, 1000));
-    toast.error("Payment request rejected.");
+    toast.error(`Payment request rejected. Reason: ${rejectReason}`);
     setActionInProgress(null);
-    setShowModal(false);
+    setShowRejectModal(false);
+    setRejectReason("");
+    setRejectRequestId(null);
+  };
+
+  const openRejectModal = (requestId, request) => {
+    setSelectedRequest(request);
+    setRejectRequestId(requestId);
+    setShowRejectModal(true);
   };
 
   const filteredRequests = fakeTransporterPayments.filter(r =>
@@ -180,38 +192,33 @@ export default function TransporterPaymentRequests() {
                   <td className="py-4 px-6 text-center">
                     <div className="flex items-center justify-center gap-3">
                       <button
-                        onClick={() => handleApprove(req._id)}
+                        onClick={() => handleMarkAsPaid(req._id)}
                         disabled={actionInProgress === req._id}
-                        className={`w-8 h-8 rounded-full bg-green-50 flex items-center justify-center border border-green-100 text-green-500 hover:bg-green-500 hover:text-white transition-all ${actionInProgress === req._id ? 'opacity-50 cursor-not-allowed' : ''
+                        className={`px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${actionInProgress === req._id ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
-                        title="Approve Payment"
+                        title="Mark as Paid"
                       >
                         {actionInProgress === req._id ? (
-                          <div className="w-3 h-3 border-2 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         ) : (
-                          <CheckIcon className="w-4 h-4" />
+                          <CreditCardIcon className="w-4 h-4" />
                         )}
+                        Mark as Paid
                       </button>
                       <button
-                        onClick={() => handleReject(req._id)}
+                        onClick={() => openRejectModal(req._id, req)}
                         disabled={actionInProgress === req._id}
-                        className={`w-8 h-8 rounded-full bg-red-50 flex items-center justify-center border border-red-100 text-red-500 hover:bg-red-500 hover:text-white transition-all ${actionInProgress === req._id ? 'opacity-50 cursor-not-allowed' : ''
+                        className={`px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 transition-all ${actionInProgress === req._id ? 'opacity-50 cursor-not-allowed' : ''
                           }`}
                         title="Reject Payment"
                       >
                         {actionInProgress === req._id ? (
-                          <div className="w-3 h-3 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                         ) : (
                           <XMarkIcon className="w-4 h-4" />
                         )}
+                        Reject
                       </button>
-                      {/* <button
-                        onClick={() => setSelectedRequest(req)}
-                        className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center border border-purple-100 text-purple-500 hover:bg-purple-500 hover:text-white transition-all"
-                        title="View Details"
-                      >
-                        <EyeIcon className="w-4 h-4" />
-                      </button> */}
                     </div>
                   </td>
                 </tr>
@@ -249,8 +256,8 @@ export default function TransporterPaymentRequests() {
                   key={pageNum}
                   onClick={() => goToPage(pageNum)}
                   className={`w-10 h-10 rounded-md transition-colors ${currentPage === pageNum
-                      ? 'bg-[#036BB4] text-white font-bold'
-                      : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-[#036BB4] text-white font-bold'
+                    : 'text-gray-600 hover:bg-gray-50'
                     }`}
                 >
                   {pageNum}
@@ -289,88 +296,73 @@ export default function TransporterPaymentRequests() {
         )}
       </div>
 
-      {/* Payment Request Details Modal */}
-      {showModal && selectedRequest && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
-              <h2 className="text-xl font-bold text-gray-800">Payment Request Details</h2>
+      {/* Reject Reason Modal */}
+      {showRejectModal && selectedRequest && (
+        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-bold text-gray-800">Reject Payment Request</h2>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason("");
+                  setRejectRequestId(null);
+                  setSelectedRequest(null);
+                }}
                 className="p-1 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <XMarkIcon className="w-6 h-6 text-gray-500" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+            <div className="p-6">
+              <div className="mb-4">
+                <div className="bg-gray-50 rounded-lg p-3 mb-4">
                   <p className="text-sm text-gray-500">Transporter</p>
                   <p className="font-medium text-gray-800">{selectedRequest.transporter_name}</p>
-                  <p className="text-sm text-gray-600">{selectedRequest.transporter_email}</p>
+                  <p className="text-sm text-gray-600 mt-1">Amount: {formatCurrency(selectedRequest.amount)}</p>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-500">Amount</p>
-                  <p className="text-xl font-bold text-green-600">{formatCurrency(selectedRequest.amount)}</p>
-                </div>
-              </div>
 
-              <div>
-                <p className="text-sm text-gray-500">Shipment</p>
-                <p className="font-medium text-gray-800">{selectedRequest.shipment_title}</p>
-              </div>
-
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-500 mb-2">Bank Details</p>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-800"><span className="font-medium">Bank:</span> {selectedRequest.bank_details}</p>
-                  <p className="text-sm text-gray-800"><span className="font-medium">Account Holder:</span> {selectedRequest.account_holder}</p>
-                  <p className="text-sm text-gray-800"><span className="font-medium">Routing Number:</span> {selectedRequest.routing_number}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-500">Request Date</p>
-                  <p className="text-sm text-gray-600">{formatDate(selectedRequest.request_date)}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">Status</p>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
-                    <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full mr-1.5"></span>
-                    Pending
-                  </span>
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for Rejection <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  rows="4"
+                  className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                  placeholder="Please provide a reason for rejecting this payment request..."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  This reason will be shared with the transporter
+                </p>
               </div>
             </div>
 
             <div className="p-6 border-t border-gray-200 flex gap-3">
               <button
-                onClick={() => handleApprove(selectedRequest._id)}
-                disabled={actionInProgress === selectedRequest._id}
-                className={`flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${actionInProgress === selectedRequest._id ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
+                onClick={() => {
+                  setShowRejectModal(false);
+                  setRejectReason("");
+                  setRejectRequestId(null);
+                  setSelectedRequest(null);
+                }}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-medium transition-all"
               >
-                {actionInProgress === selectedRequest._id ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                ) : (
-                  <CheckIcon className="w-4 h-4" />
-                )}
-                Approve & Send Payment
+                Cancel
               </button>
               <button
-                onClick={() => handleReject(selectedRequest._id)}
-                disabled={actionInProgress === selectedRequest._id}
-                className={`flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${actionInProgress === selectedRequest._id ? 'opacity-50 cursor-not-allowed' : ''
+                onClick={() => handleReject(rejectRequestId)}
+                disabled={!rejectReason.trim() || actionInProgress === rejectRequestId}
+                className={`flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${(!rejectReason.trim() || actionInProgress === rejectRequestId) ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
               >
-                {actionInProgress === selectedRequest._id ? (
+                {actionInProgress === rejectRequestId ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <XMarkIcon className="w-4 h-4" />
                 )}
-                Reject Request
+                Confirm Rejection
               </button>
             </div>
           </div>
