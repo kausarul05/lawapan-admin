@@ -1,6 +1,6 @@
 // src/lib/api.js
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || 'https://server.lawapantruck.com/api/v1'
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://server.lawapantruck.com/api/v1'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://logistics-shipment-management-backend.onrender.com/api/v1'
 
 // Helper function for making API requests
 const apiRequest = async (endpoint, options = {}) => {
