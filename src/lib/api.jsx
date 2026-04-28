@@ -556,12 +556,12 @@ export const settingsAPI = {
       'insurance': '/setting/insurance',
       'carrier-data': '/setting/carrier'
     };
-    
+
     const endpoint = endpoints[type];
     if (!endpoint) {
       throw new Error(`Invalid setting type: ${type}`);
     }
-    
+
     return apiRequest(endpoint, {
       method: 'PATCH',
       body: JSON.stringify({ description })
@@ -598,6 +598,18 @@ export const paymentAPI = {
   // Get payment statistics
   getPaymentStats: async () => {
     return apiRequest('/payment/stats');
+  },
+
+  // Get shipments awaiting payment (for sending payment requests to shippers)
+  getShipmentsAwaitingPayment: async (page = 1, limit = 10) => {
+    return apiRequest(`/pay/shipments-awaiting-payment?page=${page}&limit=${limit}`);
+  },
+
+  // Send payment request to shipper
+  sendPaymentRequestToShipper: async (shipmentId) => {
+    return apiRequest(`/pay/send-request/${shipmentId}`, {
+      method: 'POST'
+    });
   }
 };
 
