@@ -605,10 +605,14 @@ export const paymentAPI = {
     return apiRequest(`/pay/shipments-awaiting-payment?page=${page}&limit=${limit}`);
   },
 
-  // Send payment request to shipper
+  // Send payment request to shipper (UPDATED ENDPOINT)
   sendPaymentRequestToShipper: async (shipmentId) => {
-    return apiRequest(`/pay/send-request/${shipmentId}`, {
-      method: 'POST'
+    return apiRequest('/pay/request', {
+      method: 'POST',
+      body: JSON.stringify({
+        shipment_id: shipmentId,
+        notes: "Please settle payment for the completed shipment"
+      })
     });
   }
 };

@@ -53,9 +53,11 @@ export default function PaymentRequestsToShipper() {
             setActionInProgress(shipmentId);
             const response = await paymentAPI.sendPaymentRequestToShipper(shipmentId);
 
+            console.log("Send request response:", response);
+
             if (response.success) {
                 toast.success("Payment request sent to shipper successfully!");
-                // Refresh the list
+                // Refresh the list to update status
                 await fetchShipments();
             } else {
                 toast.error(response.message || "Failed to send payment request");
@@ -88,11 +90,29 @@ export default function PaymentRequestsToShipper() {
         });
     };
 
+    // Get status badge configuration
+    const getStatusBadge = (status) => {
+        switch (status?.toLowerCase()) {
+            case 'pending':
+            case 'awaiting_payment':
+                return { text: 'Awaiting Payment', color: 'bg-yellow-100 text-yellow-800', dot: 'bg-yellow-500' };
+            case 'request_sent':
+                return { text: 'Request Sent', color: 'bg-blue-100 text-blue-800', dot: 'bg-blue-500' };
+            case 'paid':
+                return { text: 'Paid', color: 'bg-green-100 text-green-800', dot: 'bg-green-500' };
+            case 'overdue':
+                return { text: 'Overdue', color: 'bg-red-100 text-red-800', dot: 'bg-red-500' };
+            default:
+                return { text: status || 'Unknown', color: 'bg-gray-100 text-gray-800', dot: 'bg-gray-500' };
+        }
+    };
+
     // Filter shipments based on search term
     const filteredShipments = shipments.filter(shipment =>
         shipment.shipper_id?.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         shipment.shipment_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        shipment._id?.toLowerCase().includes(searchTerm.toLowerCase())
+        shipment._id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        shipment.payment_status?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     // Pagination handlers
@@ -148,7 +168,7 @@ export default function PaymentRequestsToShipper() {
                             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                             <input
                                 type="text"
-                                placeholder="Search by shipper, shipment or ID..."
+                                placeholder="Search by shipper, shipment, ID or status..."
                                 className="pl-9 pr-4 py-2 w-80 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-[#036BB4] text-black"
                                 value={searchTerm}
                                 onChange={(e) => {
@@ -168,60 +188,71 @@ export default function PaymentRequestsToShipper() {
                                 <th className="py-3 px-6">Shipment</th>
                                 <th className="py-3 px-6">Amount</th>
                                 <th className="py-3 px-6">Request Date</th>
-                                <th className="py-3 px-6">Status</th>
+                                <th className="py-3 px-6 text-center">Status</th>
                                 <th className="py-3 px-6 text-center rounded-r-md">Action</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                             {currentShipments.length > 0 ? (
-                                currentShipments.map((shipment) => (
-                                    <tr key={shipment._id} className="hover:bg-gray-50 transition-colors">
-                                        <td className="py-4 px-6">
-                                            <p className="font-medium text-gray-800">
-                                                {shipment.shipper_id?.company_name || "N/A"}
-                                            </p>
-                                            <p className="text-xs text-gray-500">
-                                                ID: {shipment.shipper_id?._id?.slice(-8).toUpperCase() || "N/A"}
-                                            </p>
-                                        </td>
-                                        <td className="py-4 px-6">
-                                            <p className="text-sm font-medium text-gray-700">{shipment.shipment_title || "N/A"}</p>
-                                            <p className="text-xs text-gray-500">ID: {shipment._id?.slice(-8).toUpperCase()}</p>
-                                            <p className="text-xs text-gray-400 mt-1">
-                                                {shipment.pickup_address} → {shipment.delivery_address}
-                                            </p>
-                                        </td>
-                                        <td className="py-4 px-6">
-                                            <span className="font-bold text-green-600">
-                                                {formatCurrency(shipment.price)}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 px-6 text-sm text-gray-500">
-                                            {formatDate(shipment.createdAt)}
-                                        </td>
-                                        <td className="py-4 px-6">
-                                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
-                                                <span className="w-1.5 h-1.5 bg-yellow-500 rounded-full mr-1.5"></span>
-                                                Awaiting Payment
-                                            </span>
-                                        </td>
-                                        <td className="py-4 px-6 text-center">
-                                            <button
-                                                onClick={() => handleSendRequest(shipment._id)}
-                                                disabled={actionInProgress === shipment._id}
-                                                className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 mx-auto transition-all ${actionInProgress === shipment._id ? 'opacity-50 cursor-not-allowed' : ''
-                                                    }`}
-                                            >
-                                                {actionInProgress === shipment._id ? (
-                                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                currentShipments.map((shipment) => {
+                                    const statusBadge = getStatusBadge(shipment.payment_status);
+                                    const isRequestSent = shipment.payment_status === 'request_sent';
+
+                                    return (
+                                        <tr key={shipment._id} className="hover:bg-gray-50 transition-colors">
+                                            <td className="py-4 px-6">
+                                                <p className="font-medium text-gray-800">
+                                                    {shipment.shipper_id?.company_name || "N/A"}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    ID: {shipment.shipper_id?._id?.slice(-8).toUpperCase() || "N/A"}
+                                                </p>
+                                            </td>
+                                            <td className="py-4 px-6">
+                                                <p className="text-sm font-medium text-gray-700">{shipment.shipment_title || "N/A"}</p>
+                                                <p className="text-xs text-gray-500">ID: {shipment._id?.slice(-8).toUpperCase()}</p>
+                                                <p className="text-xs text-gray-400 mt-1">
+                                                    {shipment.pickup_address} → {shipment.delivery_address}
+                                                </p>
+                                            </td>
+                                            <td className="py-4 px-6">
+                                                <span className="font-bold text-green-600">
+                                                    {formatCurrency(shipment.price)}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 px-6 text-sm text-gray-500">
+                                                {formatDate(shipment.createdAt)}
+                                            </td>
+                                            <td className="py-4 px-6 text-center">
+                                                <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold ${statusBadge.color}`}>
+                                                    {/* <span className={`w-1.5 h-1.5 ${statusBadge.dot} rounded-full mr-1.5`}></span> */}
+                                                    {shipment.status}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 px-6 text-center">
+                                                {!isRequestSent ? (
+                                                    <button
+                                                        onClick={() => handleSendRequest(shipment._id)}
+                                                        disabled={actionInProgress === shipment._id}
+                                                        className={`px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 mx-auto transition-all ${actionInProgress === shipment._id ? 'opacity-50 cursor-not-allowed' : ''
+                                                            }`}
+                                                    >
+                                                        {actionInProgress === shipment._id ? (
+                                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                        ) : (
+                                                            <SendIcon className="w-4 h-4" />
+                                                        )}
+                                                        {actionInProgress === shipment._id ? "Sending..." : "Send Request"}
+                                                    </button>
                                                 ) : (
-                                                    <SendIcon className="w-4 h-4" />
+                                                    <span className="text-sm text-green-600 font-medium">
+                                                        Request Sent
+                                                    </span>
                                                 )}
-                                                {actionInProgress === shipment._id ? "Sending..." : "Send Request"}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             ) : (
                                 <tr>
                                     <td colSpan="6" className="py-12 text-center text-gray-500">
@@ -262,8 +293,8 @@ export default function PaymentRequestsToShipper() {
                                     key={pageNum}
                                     onClick={() => goToPage(pageNum)}
                                     className={`w-10 h-10 rounded-md transition-colors ${currentPage === pageNum
-                                            ? 'bg-[#036BB4] text-white font-bold'
-                                            : 'text-gray-600 hover:bg-gray-50'
+                                        ? 'bg-[#036BB4] text-white font-bold'
+                                        : 'text-gray-600 hover:bg-gray-50'
                                         }`}
                                 >
                                     {pageNum}
