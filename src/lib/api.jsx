@@ -614,6 +614,37 @@ export const paymentAPI = {
         notes: "Please settle payment for the completed shipment"
       })
     });
+  },
+
+  // Get transporter payment requests
+  getTransporterPaymentRequests: async (page = 1, limit = 10) => {
+    return apiRequest(`/transporter-pay/all?status=pending&page=${page}&limit=${limit}`);
+  },
+
+  // Approve transporter payment (Mark as Paid) - This will initiate payment
+  approveTransporterPayment: async (paymentId) => {
+    return apiRequest(`/transporter-pay/${paymentId}/approve`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'approved' })
+    });
+  },
+
+  // Process transporter payment (for online/bank payments)
+  processTransporterPayment: async (paymentId) => {
+    return apiRequest(`/transporter-pay/${paymentId}`, {
+      method: 'PATCH'
+    });
+  },
+
+  // Reject transporter payment
+  rejectTransporterPayment: async (paymentId, reason) => {
+    return apiRequest(`/transporter-pay/${paymentId}/reject`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        status: 'rejected',
+        rejection_reason: reason
+      })
+    });
   }
 };
 
