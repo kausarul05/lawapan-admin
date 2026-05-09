@@ -345,8 +345,8 @@ export const transporterAPI = {
 
   // Reject transporter profile
   rejectTransporter: async (transporter_id) => {
-    return apiRequest('/transporter/reject-transporter-profile', {
-      method: 'PUT',
+    return apiRequest('/transporter/approve-transporter-profile', {
+      method: 'PATCH',
       body: JSON.stringify({
         transporter_id: transporter_id,
         status: 'rejected'
@@ -571,9 +571,13 @@ export const settingsAPI = {
 
 // Payment API calls
 export const paymentAPI = {
-  // Get all pending payment requests
-  getPendingPayments: async (page = 1, limit = 10) => {
-    return apiRequest(`/payment/pending?page=${page}&limit=${limit}`);
+  // Get all shipper payments (payments made by shippers)
+  getShipperPayments: async (page = 1, limit = 10, search = '') => {
+    let url = `/pay/all?page=${page}&limit=${limit}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    return apiRequest(url);
   },
 
   // Get payment by ID
@@ -581,16 +585,16 @@ export const paymentAPI = {
     return apiRequest(`/payment/${paymentId}`);
   },
 
-  // Approve payment
-  approvePayment: async (paymentId) => {
-    return apiRequest(`/payment/${paymentId}/approve`, {
+  // Verify/Approve shipper payment
+  verifyPayment: async (paymentId) => {
+    return apiRequest(`/pay/verify/${paymentId}`, {
       method: 'PATCH'
     });
   },
 
-  // Reject payment
-  rejectPayment: async (paymentId) => {
-    return apiRequest(`/payment/${paymentId}/reject`, {
+  // Reject shipper payment
+  rejectShipperPayment: async (paymentId) => {
+    return apiRequest(`/pay/reject/${paymentId}`, {
       method: 'PATCH'
     });
   },
@@ -605,7 +609,7 @@ export const paymentAPI = {
     return apiRequest(`/pay/shipments-awaiting-payment?page=${page}&limit=${limit}`);
   },
 
-  // Send payment request to shipper (UPDATED ENDPOINT)
+  // Send payment request to shipper
   sendPaymentRequestToShipper: async (shipmentId) => {
     return apiRequest('/pay/request', {
       method: 'POST',
@@ -621,7 +625,7 @@ export const paymentAPI = {
     return apiRequest(`/transporter-pay/all?status=pending&page=${page}&limit=${limit}`);
   },
 
-  // Approve transporter payment (Mark as Paid) - This will initiate payment
+  // Approve transporter payment (Mark as Paid)
   approveTransporterPayment: async (paymentId) => {
     return apiRequest(`/transporter-pay/${paymentId}/approve`, {
       method: 'PATCH',
@@ -638,12 +642,130 @@ export const paymentAPI = {
 
   // Reject transporter payment
   rejectTransporterPayment: async (paymentId, reason) => {
-    return apiRequest(`/transporter-pay/${paymentId}/reject`, {
+    return apiRequest(`/transporter-pay/reject/${paymentId}`, {
       method: 'PATCH',
       body: JSON.stringify({
-        status: 'rejected',
-        rejection_reason: reason
+        reason: reason
       })
+    });
+  }
+};
+// export const paymentAPI = {
+//   // Get all pending payment requests
+//   getPendingPayments: async (page = 1, limit = 10) => {
+//     return apiRequest(`/payment/pending?page=${page}&limit=${limit}`);
+//   },
+
+//   // Get payment by ID
+//   getPaymentById: async (paymentId) => {
+//     return apiRequest(`/payment/${paymentId}`);
+//   },
+
+//   // Approve payment
+//   approvePayment: async (paymentId) => {
+//     return apiRequest(`/payment/${paymentId}/approve`, {
+//       method: 'PATCH'
+//     });
+//   },
+
+//   // Reject payment
+//   rejectPayment: async (paymentId) => {
+//     return apiRequest(`/payment/${paymentId}/reject`, {
+//       method: 'PATCH'
+//     });
+//   },
+
+//   // Get payment statistics
+//   getPaymentStats: async () => {
+//     return apiRequest('/payment/stats');
+//   },
+
+//   // Get shipments awaiting payment (for sending payment requests to shippers)
+//   getShipmentsAwaitingPayment: async (page = 1, limit = 10) => {
+//     return apiRequest(`/pay/shipments-awaiting-payment?page=${page}&limit=${limit}`);
+//   },
+
+//   // Send payment request to shipper (UPDATED ENDPOINT)
+//   sendPaymentRequestToShipper: async (shipmentId) => {
+//     return apiRequest('/pay/request', {
+//       method: 'POST',
+//       body: JSON.stringify({
+//         shipment_id: shipmentId,
+//         notes: "Please settle payment for the completed shipment"
+//       })
+//     });
+//   },
+
+//   // Get transporter payment requests
+//   getTransporterPaymentRequests: async (page = 1, limit = 10) => {
+//     return apiRequest(`/transporter-pay/all?status=pending&page=${page}&limit=${limit}`);
+//   },
+
+//   // Approve transporter payment (Mark as Paid) - This will initiate payment
+//   approveTransporterPayment: async (paymentId) => {
+//     return apiRequest(`/transporter-pay/${paymentId}/approve`, {
+//       method: 'PATCH',
+//       body: JSON.stringify({ status: 'approved' })
+//     });
+//   },
+
+//   // Process transporter payment (for online/bank payments)
+//   processTransporterPayment: async (paymentId) => {
+//     return apiRequest(`/transporter-pay/${paymentId}`, {
+//       method: 'PATCH'
+//     });
+//   },
+
+//   // Reject transporter payment
+//   rejectTransporterPayment: async (paymentId, reason) => {
+//     return apiRequest(`/transporter-pay/reject/${paymentId}`, {
+//       method: 'PATCH',
+//       body: JSON.stringify({
+//         // status: 'rejected',
+//         reason: reason
+//       })
+//     });
+//   }
+// };
+
+
+// Problem/Issue API calls
+export const problemAPI = {
+  // Get all issues
+  getAllIssues: async (page = 1, limit = 10, search = '') => {
+    let url = `/issues?page=${page}&limit=${limit}`;
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    return apiRequest(url);
+  },
+
+  // Get issue by ID
+  getIssueById: async (issueId) => {
+    return apiRequest(`/issues/${issueId}`);
+  },
+
+  // Resolve issue
+  resolveIssue: async (issueId) => {
+    return apiRequest(`/issues/${issueId}/resolve`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'resolved' })
+    });
+  },
+
+  // Reject issue
+  rejectIssue: async (issueId) => {
+    return apiRequest(`/issues/${issueId}/reject`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'rejected' })
+    });
+  },
+
+  // Create issue
+  createIssue: async (issueData) => {
+    return apiRequest('/issues', {
+      method: 'POST',
+      body: JSON.stringify(issueData)
     });
   }
 };
@@ -694,5 +816,6 @@ export default {
   payment: paymentAPI,
   setCookie,
   removeCookie,
-  getCookie
+  getCookie,
+  problemAPI
 }

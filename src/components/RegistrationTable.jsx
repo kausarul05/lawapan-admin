@@ -2,7 +2,7 @@
 "use client";
 
 import Image from "next/image";
-import { MagnifyingGlassIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
@@ -12,8 +12,6 @@ export default function RegistrationTable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [transporters, setTransporters] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
   const router = useRouter();
 
   // Fetch transporters from API
@@ -25,9 +23,11 @@ export default function RegistrationTable() {
     try {
       setLoading(true);
       const response = await transporterAPI.getAllTransporters();
-      
+
       if (response.success) {
-        setTransporters(response.data);
+        // Get last 10 items only
+        const lastTenItems = response.data.slice(-10);
+        setTransporters(lastTenItems);
       } else {
         toast.error(response.message || "Failed to fetch transporters");
       }
@@ -65,7 +65,7 @@ export default function RegistrationTable() {
   const handleApprove = async (id) => {
     try {
       const response = await transporterAPI.approveTransporter(id);
-      
+
       if (response.success) {
         toast.success("Transporter approved successfully!");
         await fetchTransporters(); // Refresh the list
@@ -82,7 +82,7 @@ export default function RegistrationTable() {
   const handleReject = async (id) => {
     try {
       const response = await transporterAPI.rejectTransporter(id);
-      
+
       if (response.success) {
         toast.success("Transporter rejected successfully!");
         await fetchTransporters(); // Refresh the list
@@ -96,40 +96,15 @@ export default function RegistrationTable() {
   };
 
   // Filter transporters based on search term
-  const filteredTransporters = transporters.filter(transporter => 
+  const filteredTransporters = transporters.filter(transporter =>
     transporter.company_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     transporter.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     formatMembershipId(transporter._id).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Pagination logic
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentTransporters = filteredTransporters.slice(indexOfFirstItem, indexOfLastItem);
-  const totalPages = Math.ceil(filteredTransporters.length / itemsPerPage);
-
-  // Pagination handlers
-  const goToPage = (page) => {
-    setCurrentPage(page);
-  };
-
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
   // Handle search change
   const handleSearchChange = (e) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-    setCurrentPage(1); // Reset to first page when searching
+    setSearchTerm(e.target.value.toLowerCase());
   };
 
   // Loading state
@@ -151,7 +126,7 @@ export default function RegistrationTable() {
       {/* Header Section */}
       <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
         <h2 className="text-lg font-bold text-black font-['Roboto']">
-          Transporter Registrations ({transporters.length})
+          Recent Transporter Registrations ({filteredTransporters.length})
         </h2>
 
         <div className="flex items-center">
@@ -167,7 +142,7 @@ export default function RegistrationTable() {
           </div>
         </div>
       </div>
-      
+
       {/* Table Section */}
       <div className="overflow-x-auto">
         <table className="w-full text-left">
@@ -180,11 +155,11 @@ export default function RegistrationTable() {
               <th className="py-3 px-4 font-semibold text-sm text-center">Registration Date</th>
               <th className="py-3 px-4 font-semibold text-sm text-center">Status</th>
               <th className="py-3 px-4 font-semibold text-sm text-center last:rounded-r-md">Action</th>
-             </tr>
+            </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {currentTransporters.length > 0 ? (
-              currentTransporters.map((transporter) => (
+            {filteredTransporters.length > 0 ? (
+              filteredTransporters.map((transporter) => (
                 <tr key={transporter._id} className="hover:bg-gray-50 transition-colors">
                   <td className="py-4 px-4 text-gray-600 text-sm font-mono">
                     {formatMembershipId(transporter._id)}
@@ -193,12 +168,12 @@ export default function RegistrationTable() {
                     <div className="flex items-center gap-3">
                       <div className="w-7 h-7 rounded-full bg-blue-50 border border-blue-100 flex items-center justify-center overflow-hidden">
                         {transporter.logo ? (
-                          <img 
-                            src={transporter.logo} 
+                          <img
+                            src={transporter.logo}
                             alt={transporter.company_name}
                             className="w-full h-full object-cover"
                             onError={(e) => {
-                              e.target.src = "/icon/truck-logo.png";
+                              e.target.src = "https://placehold.co/40x40/036BB4/FFFFFF?text=Logo";
                             }}
                           />
                         ) : (
@@ -220,13 +195,12 @@ export default function RegistrationTable() {
                     {formatDate(transporter.createdAt)}
                   </td>
                   <td className="py-4 px-4 text-center">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
-                      transporter.status === 'approved' 
-                        ? 'bg-green-100 text-green-800' 
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${transporter.status === 'approved'
+                        ? 'bg-green-100 text-green-800'
                         : transporter.status === 'rejected'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}>
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
                       {transporter.status || 'pending'}
                     </span>
                   </td>
@@ -234,8 +208,8 @@ export default function RegistrationTable() {
                     <div className="flex items-center justify-center gap-3">
                       {/* Approve Button - Only show for pending */}
                       {transporter.status === 'pending' && (
-                        <button 
-                          onClick={() => handleApprove(transporter._id)} 
+                        <button
+                          onClick={() => handleApprove(transporter._id)}
                           className="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center hover:bg-green-100 transition-colors group"
                           title="Approve"
                         >
@@ -244,11 +218,11 @@ export default function RegistrationTable() {
                           </svg>
                         </button>
                       )}
-                      
+
                       {/* Reject Button - Only show for pending */}
                       {transporter.status === 'pending' && (
-                        <button 
-                          onClick={() => handleReject(transporter._id)} 
+                        <button
+                          onClick={() => handleReject(transporter._id)}
                           className="w-7 h-7 rounded-full bg-red-50 flex items-center justify-center hover:bg-red-100 transition-colors group"
                           title="Reject"
                         >
@@ -258,10 +232,10 @@ export default function RegistrationTable() {
                           </svg>
                         </button>
                       )}
-                      
+
                       {/* View Details Button - Show for all */}
-                      <button 
-                        onClick={() => handleViewDetails(transporter._id)} 
+                      <button
+                        onClick={() => handleViewDetails(transporter._id)}
                         className="w-7 h-7 rounded-full bg-purple-50 flex items-center justify-center hover:bg-purple-100 transition-colors group"
                         title="View Details"
                       >
@@ -284,78 +258,6 @@ export default function RegistrationTable() {
           </tbody>
         </table>
       </div>
-
-      {/* Pagination Section */}
-      {filteredTransporters.length > 0 && totalPages > 1 && (
-        <div className="flex justify-end items-center gap-2 mt-6">
-          <button 
-            onClick={goToPreviousPage}
-            disabled={currentPage === 1}
-            className={`w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors ${
-              currentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            <ChevronLeftIcon className="w-4 h-4" />
-          </button>
-          
-          {/* Page numbers */}
-          {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-            let pageNum;
-            if (totalPages <= 5) {
-              pageNum = i + 1;
-            } else if (currentPage <= 3) {
-              pageNum = i + 1;
-            } else if (currentPage >= totalPages - 2) {
-              pageNum = totalPages - 4 + i;
-            } else {
-              pageNum = currentPage - 2 + i;
-            }
-            
-            return (
-              <button
-                key={pageNum}
-                onClick={() => goToPage(pageNum)}
-                className={`w-8 h-8 rounded-md text-sm transition-colors ${
-                  currentPage === pageNum
-                    ? 'bg-[#036BB4] text-white font-semibold'
-                    : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                {pageNum}
-              </button>
-            );
-          })}
-          
-          {totalPages > 5 && currentPage < totalPages - 2 && (
-            <>
-              <span className="px-2 text-gray-400">...</span>
-              <button
-                onClick={() => goToPage(totalPages)}
-                className="w-8 h-8 rounded-md text-sm text-gray-600 hover:bg-gray-50"
-              >
-                {totalPages}
-              </button>
-            </>
-          )}
-          
-          <button 
-            onClick={goToNextPage}
-            disabled={currentPage === totalPages}
-            className={`w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors ${
-              currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          >
-            <ChevronRightIcon className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {/* Show total count */}
-      {filteredTransporters.length > 0 && (
-        <div className="mt-4 text-sm text-gray-500 text-right">
-          Showing {indexOfFirstItem + 1} to {Math.min(indexOfLastItem, filteredTransporters.length)} of {filteredTransporters.length} entries
-        </div>
-      )}
     </div>
   );
 }

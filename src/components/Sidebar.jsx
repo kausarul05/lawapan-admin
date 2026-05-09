@@ -51,11 +51,11 @@ const navItems = [
     href: "/admin/withdrawal-requests",
     icon: CloudDownload,
   },
-  {
-    name: "Pending Payment Requests",
-    href: "/admin/pending-payment-requests",
-    icon: CreditCard,
-  },
+  // {
+  //   name: "Pending Payment Requests",
+  //   href: "/admin/pending-payment-requests",
+  //   icon: CreditCard,
+  // },
   { name: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
