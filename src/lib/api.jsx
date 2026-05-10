@@ -728,6 +728,37 @@ export const paymentAPI = {
 //   }
 // };
 
+// Withdrawal API calls
+export const withdrawalAPI = {
+  // Get all withdrawal requests
+  getAllWithdrawals: async (page = 1, limit = 10) => {
+    return apiRequest(`/withdrawal/all?page=${page}&limit=${limit}`);
+  },
+
+  // Get withdrawal by ID
+  getWithdrawalById: async (withdrawalId) => {
+    return apiRequest(`/withdrawal/${withdrawalId}`);
+  },
+
+  // Approve withdrawal request
+  approveWithdrawal: async (withdrawalId) => {
+    return apiRequest(`/withdrawal/approve/${withdrawalId}`, {
+      method: 'PATCH'
+    });
+  },
+
+  // Reject withdrawal request
+  rejectWithdrawal: async (withdrawalId) => {
+    return apiRequest(`/withdrawal/reject/${withdrawalId}`, {
+      method: 'PATCH'
+    });
+  },
+
+  // Get withdrawal statistics
+  getWithdrawalStats: async () => {
+    return apiRequest('/withdrawal/stats');
+  }
+};
 
 // Problem/Issue API calls
 export const problemAPI = {
@@ -817,5 +848,6 @@ export default {
   setCookie,
   removeCookie,
   getCookie,
-  problemAPI
+  problemAPI,
+  withdrawalAPI
 }
