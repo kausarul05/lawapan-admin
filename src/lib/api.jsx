@@ -760,6 +760,29 @@ export const withdrawalAPI = {
   }
 };
 
+// Earning API calls
+export const earningAPI = {
+  // Get earnings with filter (weekly, monthly, yearly)
+  getEarnings: async (filter = 'weekly', page = 1, limit = 10) => {
+    return apiRequest(`/earning/my-earnings?filter=${filter}&page=${page}&limit=${limit}`);
+  },
+
+  // Get earning by ID
+  getEarningById: async (earningId) => {
+    return apiRequest(`/earning/${earningId}`);
+  },
+
+  // Get earning statistics
+  getEarningStats: async () => {
+    return apiRequest('/earning/stats');
+  },
+
+  // Get earning summary
+  getEarningSummary: async (filter = 'weekly') => {
+    return apiRequest(`/earning/summary?filter=${filter}`);
+  }
+};
+
 // Problem/Issue API calls
 export const problemAPI = {
   // Get all issues
@@ -849,5 +872,6 @@ export default {
   removeCookie,
   getCookie,
   problemAPI,
-  withdrawalAPI
+  withdrawalAPI,
+  earningAPI
 }

@@ -36,7 +36,7 @@ const navItems = [
   { name: "Live Bids & Transporter", href: "/admin/live-bids-transporter", icon: Radio },
   // { name: "Transporter Bid Requests", href: "/admin/transporter-bid-requests", icon: Truck }, // NEW
   { name: "User Management", href: "/admin/user-management", icon: UserCog },
-  { name: 'Earning', href: '/admin/earning', icon: ShoppingBag },
+  // { name: 'Earning', href: '/admin/earning', icon: ShoppingBag },
   { name: "Payment Requests to Shipper", href: "/admin/payment-requests-to-shipper", icon: DollarSign }, // NEW
   { name: "Payment Verification", href: "/admin/payment-verification", icon: CheckCircle }, // NEW
   { name: "Transporter Payment Requests", href: "/admin/transporter-payment-requests", icon: Receipt }, // NEW

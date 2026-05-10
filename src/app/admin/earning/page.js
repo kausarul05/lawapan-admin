@@ -5,7 +5,6 @@ const Earning = () => {
   return (
     <div>
         <EarningsTable/>
-
     </div>
   )
 }
