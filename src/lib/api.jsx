@@ -610,11 +610,12 @@ export const paymentAPI = {
   },
 
   // Send payment request to shipper
-  sendPaymentRequestToShipper: async (shipmentId) => {
+  sendPaymentRequestToShipper: async (shipmentId, amount) => {
     return apiRequest('/pay/request', {
       method: 'POST',
       body: JSON.stringify({
         shipment_id: shipmentId,
+        amount: amount,
         notes: "Please settle payment for the completed shipment"
       })
     });

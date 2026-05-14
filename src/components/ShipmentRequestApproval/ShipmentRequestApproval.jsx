@@ -186,7 +186,7 @@ export default function ShipmentRequestApproval() {
                 <th className="py-3 px-6 text-sm font-semibold first:rounded-l-md">Shipment Title</th>
                 <th className="py-3 px-6 text-sm font-semibold">Category</th>
                 <th className="py-3 px-6 text-sm font-semibold">Weight</th>
-                <th className="py-3 px-6 text-sm font-semibold">Price</th>
+                {/* <th className="py-3 px-6 text-sm font-semibold">Price</th> */}
                 <th className="py-3 px-6 text-sm font-semibold">Pickup Address</th>
                 <th className="py-3 px-6 text-sm font-semibold text-center">Date Preference</th>
                 <th className="py-3 px-6 text-sm font-semibold text-center last:rounded-r-md">Action</th>
@@ -207,9 +207,9 @@ export default function ShipmentRequestApproval() {
                     <td className="py-4 px-6 text-sm text-gray-500">
                       {shipment.weight || "N/A"}
                     </td>
-                    <td className="py-4 px-6 text-sm font-semibold text-green-600">
+                    {/* <td className="py-4 px-6 text-sm font-semibold text-green-600">
                       {formatPrice(shipment.price)}
-                    </td>
+                    </td> */} 
                     <td className="py-4 px-6 text-sm text-gray-500 max-w-xs truncate">
                       {shipment.pickup_address || "N/A"}
                     </td>

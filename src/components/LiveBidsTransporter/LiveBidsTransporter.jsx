@@ -7,20 +7,18 @@ import {
   ChevronRight,
   Eye,
   Check,
-  MinusCircle,
-  RefreshCw
+  RefreshCw,
+  X
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { bidAPI } from '@/lib/api';
+import { bidAPI, paymentAPI } from '@/lib/api';
 import socketService from '@/services/socketService';
 
-
 // Replace localhost URL with server URL
-    const replaceImageUrl = (url) => {
-        if (!url) return '/shipment-sample.jpg';
-        // Replace localhost:5000 with server.lawapantruck.com
-        return url.replace('http://localhost:5000', 'https://server.lawapantruck.com');
-    };
+const replaceImageUrl = (url) => {
+  if (!url) return '/shipment-sample.jpg';
+  return url.replace('http://localhost:5000', 'https://server.lawapantruck.com');
+};
 
 const LiveBidsTransporter = () => {
   const [shipments, setShipments] = useState([]);
@@ -34,6 +32,9 @@ const LiveBidsTransporter = () => {
   const [shipmentIndex, setShipmentIndex] = useState(0);
   const [socketConnected, setSocketConnected] = useState(false);
   const [connectingSocket, setConnectingSocket] = useState(false);
+  const [showBidModal, setShowBidModal] = useState(false);
+  const [selectedBid, setSelectedBid] = useState(null);
+  const [sendingRequest, setSendingRequest] = useState(false);
   const itemsPerPage = 5;
 
   // Fetch all shipments (bidding shipments)
@@ -45,7 +46,6 @@ const LiveBidsTransporter = () => {
       if (selectedShipment) {
         socketService.leaveShipmentRoom(selectedShipment._id);
       }
-      // Don't disconnect socket on unmount to keep connection for other components
     };
   }, []);
 
@@ -88,7 +88,6 @@ const LiveBidsTransporter = () => {
       if (token) {
         console.log('Initializing socket connection with token...');
 
-        // Set up connection status listener BEFORE connecting
         socketService.on('connection_status', (status) => {
           console.log('Socket status update:', status);
 
@@ -96,7 +95,6 @@ const LiveBidsTransporter = () => {
             setSocketConnected(true);
             toast.success('Real-time bidding connected!', { duration: 3000 });
 
-            // Re-join room if there's a selected shipment
             if (selectedShipment) {
               setTimeout(() => {
                 socketService.joinShipmentRoom(selectedShipment._id);
@@ -104,7 +102,6 @@ const LiveBidsTransporter = () => {
             }
           } else if (status.status === 'disabled') {
             setSocketConnected(false);
-            // Don't show error toast - just note that real-time is disabled
             console.log('Real-time bidding not available');
           } else {
             setSocketConnected(false);
@@ -118,16 +115,13 @@ const LiveBidsTransporter = () => {
           setSocketConnected(false);
         });
 
-        // Connect to socket
         socketService.connect(token);
 
-        // Set a timeout to handle connection - don't show errors to users
         setTimeout(() => {
           if (!socketService.isConnectedToSocket() && !socketConnected) {
             console.log('Socket connection timeout - real-time features disabled');
             setConnectingSocket(false);
             setSocketConnected(false);
-            // Don't show toast error - just silently disable real-time
           }
         }, 5000);
 
@@ -156,12 +150,10 @@ const LiveBidsTransporter = () => {
       const response = await bidAPI.getAllBids();
 
       if (response.success) {
-        // Show all bids, no filtering
         const allShipments = response.data || [];
         setShipments(allShipments);
         setTotalPages(Math.ceil(allShipments.length / itemsPerPage));
 
-        // Select first shipment if available
         if (allShipments.length > 0) {
           setSelectedShipment(allShipments[0]);
         }
@@ -222,10 +214,8 @@ const LiveBidsTransporter = () => {
         duration: 4000,
         position: 'top-right'
       });
-      // Refresh bids for current shipment
       fetchBidsForShipment(selectedShipment._id);
     } else if (data.shipment_id) {
-      // If bid is for a different shipment, show notification
       const shipment = shipments.find(s => s._id === data.shipment_id);
       if (shipment) {
         toast.info(`New bid on "${shipment.shipment_title}"`, {
@@ -239,7 +229,6 @@ const LiveBidsTransporter = () => {
   const handleBidAccepted = (data) => {
     console.log("Bid accepted:", data);
     toast.success(`Bid has been accepted!`);
-    // Refresh shipments to update status
     fetchShipments();
     if (selectedShipment) {
       fetchBidsForShipment(selectedShipment._id);
@@ -253,39 +242,55 @@ const LiveBidsTransporter = () => {
 
   const handleAcceptBid = async (bid) => {
     try {
-      const response = await bidAPI.acceptBid(bid._id);
+      setSendingRequest(true);
 
-      if (response.success) {
+      // First, accept the bid
+      const acceptResponse = await bidAPI.acceptBid(bid._id);
+
+      if (acceptResponse.success) {
         toast.success(`Bid accepted from ${bid.transporter_id || 'transporter'}!`);
-        // Refresh shipments to update status
+
+        // Then, send payment request to shipper with the bid amount
+        await handleSendPaymentRequest(selectedShipment?._id, bid.bid_amount);
+
+        // Refresh both shipments and bids
         await fetchShipments();
         if (selectedShipment) {
           await fetchBidsForShipment(selectedShipment._id);
         }
       } else {
-        toast.error(response.message || "Failed to accept bid");
+        toast.error(acceptResponse.message || "Failed to accept bid");
       }
     } catch (error) {
       console.error("Error accepting bid:", error);
       toast.error(error.message || "Failed to accept bid");
+    } finally {
+      setSendingRequest(false);
+    }
+  };
+
+  const handleSendPaymentRequest = async (shipmentId, amount) => {
+    if (!shipmentId) return;
+
+    try {
+      const response = await paymentAPI.sendPaymentRequestToShipper(shipmentId, amount);
+
+      console.log("Send request response:", response);
+
+      if (response.success) {
+        toast.success(`Payment request of ${formatCurrency(amount)} sent to shipper successfully!`);
+      } else {
+        toast.error(response.message || "Failed to send payment request");
+      }
+    } catch (error) {
+      console.error("Error sending payment request:", error);
+      toast.error(error.message || "Failed to send payment request");
     }
   };
 
   const handleViewBidDetails = (bid) => {
-    // Show bid details in a modal or alert with more info
-    const bidDetails = `
-      Bid Details:
-      ─────────────
-      Transporter ID: ${bid.transporter_id || 'N/A'}
-      Bid Amount: $${bid.bid_amount || 'N/A'}
-      Driver ID: ${bid.driver_id || 'N/A'}
-      Vehicle ID: ${bid.vehicle_id || 'N/A'}
-      Bid ID: ${bid._id || 'N/A'}
-      Created: ${bid.createdAt ? new Date(bid.createdAt).toLocaleString() : 'N/A'}
-    `;
-
-    // You can replace this with a proper modal component
-    alert(bidDetails);
+    setSelectedBid(bid);
+    setShowBidModal(true);
   };
 
   const handlePrevShipment = () => {
@@ -304,7 +309,6 @@ const LiveBidsTransporter = () => {
     }
   };
 
-  // Format currency
   const formatCurrency = (amount) => {
     if (!amount && amount !== 0) return "N/A";
     return new Intl.NumberFormat('en-US', {
@@ -315,7 +319,12 @@ const LiveBidsTransporter = () => {
     }).format(amount);
   };
 
-  // Get status badge color
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
   const getStatusColor = (status) => {
     switch (status?.toUpperCase()) {
       case 'OPEN':
@@ -333,7 +342,6 @@ const LiveBidsTransporter = () => {
     }
   };
 
-  // Get bidder name from transporter ID
   const getBidderName = (transporterId) => {
     if (!transporterId) return "Unknown";
     return `Transporter ${transporterId.slice(-6).toUpperCase()}`;
@@ -383,8 +391,7 @@ const LiveBidsTransporter = () => {
 
   return (
     <div className="p-6 bg-white min-h-screen font-sans">
-
-      {/* 1. Header Section */}
+      {/* Header Section */}
       <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
         <h2 className="text-xl font-bold text-gray-800">
           Live Bids & Assigned Transporter
@@ -422,7 +429,7 @@ const LiveBidsTransporter = () => {
         </div>
       </div>
 
-      {/* 2. Horizontal Shipment Cards Slider */}
+      {/* Horizontal Shipment Cards Slider */}
       <div className="flex gap-4 mb-8 overflow-x-auto pb-4 no-scrollbar">
         {visibleShipments.map((ship) => (
           <div
@@ -433,7 +440,6 @@ const LiveBidsTransporter = () => {
               : 'hover:scale-105'
               }`}
           >
-            {/* Background Image */}
             <div className="absolute inset-0 bg-gray-600">
               {ship.shipment_images?.[0] ? (
                 <img
@@ -446,18 +452,13 @@ const LiveBidsTransporter = () => {
               )}
             </div>
 
-            {/* Badges */}
-            <div className="absolute top-2 left-2 right-2 flex justify-between">
-              {/* <span className="bg-red-600 text-white text-[10px] px-2 py-1 rounded-full flex items-center gap-1">
-                <MinusCircle size={10} /> Remove
-              </span> */}
+            <div className="absolute top-2 left-2 right-2 flex justify-end">
               <span className={`${getStatusColor(ship.status)} text-white text-[10px] px-2 py-1 rounded-full flex items-center gap-1`}>
                 <div className="w-1.5 h-1.5 bg-white rounded-full" />
                 {ship.status}
               </span>
             </div>
 
-            {/* Title */}
             <div className="absolute bottom-2 left-2 right-2 text-white text-sm font-semibold truncate">
               {ship.shipment_title}
             </div>
@@ -467,8 +468,7 @@ const LiveBidsTransporter = () => {
 
       {selectedShipment && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* 3. Bids Table Section */}
+          {/* Bids Table Section */}
           <div className="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
             <div className="p-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
               <div>
@@ -511,7 +511,7 @@ const LiveBidsTransporter = () => {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {bids.map((bid) => (
-                      <tr key={bid._id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => handleViewBidDetails(bid)}>
+                      <tr key={bid._id} className="hover:bg-gray-50 transition-colors">
                         <td className="py-3 px-6">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
@@ -542,6 +542,7 @@ const LiveBidsTransporter = () => {
                                 e.stopPropagation();
                                 handleAcceptBid(bid);
                               }}
+                              disabled={sendingRequest}
                               className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center border border-green-100 text-green-500 hover:bg-green-500 hover:text-white transition-all"
                               title="Accept Bid"
                             >
@@ -585,7 +586,7 @@ const LiveBidsTransporter = () => {
             </div>
           </div>
 
-          {/* 4. Assigned Transporter Section */}
+          {/* Assigned Transporter Section */}
           <div className="border border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center text-center shadow-sm">
             <div className="mb-6 relative w-48 h-48">
               <div className="w-full h-full flex items-center justify-center text-blue-400">
@@ -612,14 +613,14 @@ const LiveBidsTransporter = () => {
             )}
             {bids.length > 0 && (
               <div className="mt-4 text-xs text-blue-500">
-                💡 Tip: Click on any bid row to view full details
+                💡 Tip: Click the eye icon to view full bid details
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* 5. Pagination Footer */}
+      {/* Pagination Footer */}
       {shipments.length > itemsPerPage && (
         <div className="flex justify-end items-center gap-2 mt-8">
           <button
@@ -685,6 +686,85 @@ const LiveBidsTransporter = () => {
           >
             <ChevronRight size={20} />
           </button>
+        </div>
+      )}
+
+      {/* Bid Details Modal */}
+      {showBidModal && selectedBid && (
+        <div className="fixed inset-0 bg-black/50 bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto text-black">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-800">Bid Details</h2>
+              <button
+                onClick={() => setShowBidModal(false)}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-6 h-6 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Transporter ID</p>
+                  <p className="font-mono text-sm font-medium">{selectedBid.transporter_id || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Bid Amount</p>
+                  <p className="text-xl font-bold text-green-600">{formatCurrency(selectedBid.bid_amount)}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Driver ID</p>
+                  <p className="font-mono text-sm">{selectedBid.driver_id || "N/A"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Vehicle ID</p>
+                  <p className="font-mono text-sm">{selectedBid.vehicle_id || "N/A"}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Bid ID</p>
+                <p className="font-mono text-sm">{selectedBid._id || "N/A"}</p>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-500">Created At</p>
+                <p className="text-sm">{formatDate(selectedBid.createdAt)}</p>
+              </div>
+
+              {selectedBid.notes && (
+                <div>
+                  <p className="text-sm text-gray-500">Notes</p>
+                  <p className="text-sm">{selectedBid.notes}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowBidModal(false);
+                  handleAcceptBid(selectedBid);
+                }}
+                disabled={sendingRequest}
+                className={`flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${sendingRequest ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+              >
+                <Check className="w-4 h-4" />
+                {sendingRequest ? 'Processing...' : 'Accept Bid & Send Payment Request'}
+              </button>
+              <button
+                onClick={() => setShowBidModal(false)}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 rounded-lg font-medium transition-all"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

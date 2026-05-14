@@ -167,7 +167,7 @@ export default function TransporterPaymentRequests() {
       case 'online':
         return {
           icon: <DevicePhoneMobileIcon className="w-5 h-5 text-purple-500" />,
-          title: 'Online Payment',
+          title: 'Mobile Money',
           color: 'bg-purple-100 text-purple-800',
           fields: [
             { label: 'Mobile Money Number', value: request?.mobile_money_phone || 'N/A' },
