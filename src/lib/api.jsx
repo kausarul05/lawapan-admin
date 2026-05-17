@@ -635,9 +635,12 @@ export const paymentAPI = {
   },
 
   // Process transporter payment (for online/bank payments)
-  processTransporterPayment: async (paymentId) => {
-    return apiRequest(`/transporter-pay/${paymentId}`, {
-      method: 'PATCH'
+  processTransporterPayment: async (paymentId, amount) => {
+    return apiRequest(`/transporter-pay/pay/${paymentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        amount: amount
+      })
     });
   },
 

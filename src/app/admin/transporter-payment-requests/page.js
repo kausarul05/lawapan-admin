@@ -65,10 +65,8 @@ export default function TransporterPaymentRequests() {
     setShowPaymentModal(true);
   };
 
-  console.log("yyyyyyyyyyyy", payments)
-
-  const handlePaymentConfirm = async (url) => {
-    if (!selectedRequest || !url) {
+  const handlePaymentConfirm = async () => {
+    if (!selectedRequest || !paymentRequestId) {
       toast.error("Invalid payment request");
       return;
     }
@@ -76,27 +74,27 @@ export default function TransporterPaymentRequests() {
     try {
       setProcessingPayment(true);
 
-      console.log("Processing payment...");
+      console.log("Processing payment for:", paymentRequestId);
+      console.log("Amount:", selectedRequest.amount);
 
-      // 👉 Open payment link (handle popup block)
-      const paymentWindow = window.open(url, "_blank");
+      // Call the API to credit transporter wallet
+      const response = await paymentAPI.processTransporterPayment(paymentRequestId, selectedRequest.amount);
 
-      if (!paymentWindow) {
-        throw new Error("Popup blocked! Please allow popups.");
+      console.log("Payment processing response:", response);
+
+      if (response.success) {
+        toast.success(`Successfully credited $${selectedRequest.amount} to transporter's wallet!`);
+
+        // Close modal and refresh the list
+        setShowPaymentModal(false);
+        setSelectedRequest(null);
+        setPaymentRequestId(null);
+
+        // Refresh the payment requests list
+        await fetchPaymentRequests();
+      } else {
+        toast.error(response.message || "Failed to process payment");
       }
-
-      toast.success("Redirecting to payment gateway...");
-
-      // 👉 UI cleanup (no unnecessary delay)
-      setShowPaymentModal(false);
-      setSelectedRequest(null);
-      setPaymentRequestId(null);
-
-      // 👉 Optional: refresh after slight delay
-      setTimeout(() => {
-        fetchPaymentRequests();
-      }, 1000);
-
     } catch (error) {
       console.error("Error processing payment:", error);
       toast.error(error.message || "Failed to process payment");
@@ -170,7 +168,7 @@ export default function TransporterPaymentRequests() {
           title: 'Mobile Money',
           color: 'bg-purple-100 text-purple-800',
           fields: [
-            { label: 'Mobile Money Number', value: request?.mobile_money_phone || 'N/A' },
+            { label: 'Mobile Money Number', value: request?.mobile_money_phone || request?.payment_details?.mobile_money_phone || 'N/A' },
             { label: 'Amount', value: formatCurrency(request?.amount) },
             { label: 'Note', value: request?.notes || 'No notes provided' }
           ]
@@ -518,10 +516,11 @@ export default function TransporterPaymentRequests() {
                 </div>
               </div>
 
-              <div className="bg-yellow-50 rounded-lg p-4 mb-4">
-                <p className="text-sm text-yellow-800 flex items-start gap-2">
-                  <span className="text-yellow-600">⚠️</span>
-                  Please verify the payment details before proceeding. Once confirmed, you will be redirected to the payment gateway.
+              <div className="bg-blue-50 rounded-lg p-4 mb-4">
+                <p className="text-sm text-blue-800 flex items-start gap-2">
+                  <span className="text-blue-600">ℹ️</span>
+                  This will credit the transporter's wallet with {formatCurrency(selectedRequest.amount)}.
+                  The transporter will be notified once the payment is processed.
                 </p>
               </div>
             </div>
@@ -538,7 +537,7 @@ export default function TransporterPaymentRequests() {
                 Cancel
               </button>
               <button
-                onClick={() => handlePaymentConfirm(selectedRequest.paydunya_url)}
+                onClick={handlePaymentConfirm}
                 disabled={processingPayment}
                 className={`flex-1 bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2 ${processingPayment ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
@@ -548,7 +547,7 @@ export default function TransporterPaymentRequests() {
                 ) : (
                   <CreditCardIcon className="w-4 h-4" />
                 )}
-                {processingPayment ? "Processing..." : "Confirm & Pay"}
+                {processingPayment ? "Processing..." : "Confirm & Credit Wallet"}
               </button>
             </div>
           </div>
