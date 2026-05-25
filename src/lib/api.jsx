@@ -1,6 +1,6 @@
 // src/lib/api.js
-// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://server.lawapantruck.com/api/v1'
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://logistics-shipment-management-backend.onrender.com/api/v1'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://server.lawapantruck.com/api/v1'
+// const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://logistics-shipment-management-backend.onrender.com/api/v1'
 
 // Helper function for making API requests
 const apiRequest = async (endpoint, options = {}) => {
@@ -735,8 +735,15 @@ export const paymentAPI = {
 // Withdrawal API calls
 export const withdrawalAPI = {
   // Get all withdrawal requests
-  getAllWithdrawals: async (page = 1, limit = 10) => {
-    return apiRequest(`/withdrawal/all?page=${page}&limit=${limit}`);
+  getAllWithdrawals: async (page = 1, limit = 10, status = '', search = '') => {
+    let url = `/withdrawal/all?page=${page}&limit=${limit}`;
+    if (status) {
+      url += `&status=${status}`;
+    }
+    if (search) {
+      url += `&search=${encodeURIComponent(search)}`;
+    }
+    return apiRequest(url);
   },
 
   // Get withdrawal by ID
@@ -744,17 +751,11 @@ export const withdrawalAPI = {
     return apiRequest(`/withdrawal/${withdrawalId}`);
   },
 
-  // Approve withdrawal request
-  approveWithdrawal: async (withdrawalId) => {
-    return apiRequest(`/withdrawal/approve/${withdrawalId}`, {
-      method: 'PATCH'
-    });
-  },
-
-  // Reject withdrawal request
-  rejectWithdrawal: async (withdrawalId) => {
-    return apiRequest(`/withdrawal/reject/${withdrawalId}`, {
-      method: 'PATCH'
+  // Update withdrawal status (approve/reject)
+  updateWithdrawalStatus: async (withdrawalId, data) => {
+    return apiRequest(`/withdrawal/update/${withdrawalId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
     });
   },
 
